@@ -1,0 +1,156 @@
+package views
+
+import MovieDetails
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.onClick
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import view_models.MoviesIndexViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import data_objects.MediaIndex
+import io.ktor.http.appendPathSegments
+import io.ktor.http.buildUrl
+import io.ktor.http.takeFrom
+import view_models.MainUiState
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun MoviesIndexView(navController: NavController, viewModel: MoviesIndexViewModel = viewModel { MoviesIndexViewModel() }) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    when (val state = uiState) {
+        is MainUiState.Loading -> { Text("loading") }
+        is MainUiState.Loaded -> {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize().padding(10.dp)
+            ) {
+                state.media.forEach { media ->
+                    MediaIndexView(
+                        media = media,
+                        modifier = Modifier
+                            .onClick {
+                                navController.navigate(MovieDetails(media.id))
+                            }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun MediaIndexView(media: MediaIndex, modifier: Modifier = Modifier) {
+    var hovered by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .width(160.dp)
+            .height(240.dp)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .onPointerEvent(PointerEventType.Enter) {
+                hovered = true
+            }
+            .onPointerEvent(PointerEventType.Exit) {
+                hovered = false
+            }
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(
+                    buildUrl {
+                        takeFrom("https://image.tmdb.org/t/p/original/")
+                        appendPathSegments(media.posterPath!!) //TODO
+                    }.toString()
+                )
+                .error {
+                    null
+                }
+                //TODO: fallback and err
+                .build(),
+            contentDescription = media.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+        )
+
+        if(hovered) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                if(media.stars != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Black.copy(alpha = 0.8f))
+                            .padding(5.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color.Yellow
+                            )
+
+                            Text(
+                                text = "%.2f".format(media.stars),
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = media.title,
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.8f))
+                        .padding(5.dp)
+                )
+            }
+        }
+    }
+
+}
