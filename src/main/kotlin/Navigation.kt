@@ -55,12 +55,14 @@ fun Navigation() {
 
     val backstack by navController.currentBackStackEntryAsState()
 
+    val isOnRoot = backstack?.destination?.hasRoute<MoviesIndex>() == true
+
     Column {
         TopAppBar(
             title = { Text("Movies") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             navigationIcon = {
-                if (backstack?.destination?.hasRoute<MoviesIndex>() == true) {
+                if (isOnRoot) {
                     IconButton(
                         onClick = {
                             scope.launch {
@@ -82,6 +84,7 @@ fun Navigation() {
             },
         )
         ModalNavigationDrawer(
+            gesturesEnabled = isOnRoot,
             drawerContent = {
                 Surface(
                     modifier = Modifier

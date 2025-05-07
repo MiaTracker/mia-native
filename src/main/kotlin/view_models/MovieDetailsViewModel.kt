@@ -2,8 +2,10 @@ package view_models
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data_objects.AlternativeTitle
 import data_objects.MovieDetails
 import data_objects.Result
+import data_objects.TitleCreate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,12 +30,32 @@ class MovieDetailsViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            val result = Api.Movies.Id(id).get()
+            refresh()
+        }
+    }
 
-            when(result) {
-                is Result.Error<*> -> TODO()
-                is Result.Success<MovieDetails> -> {
-                    _uiState.value = MovieDetailsUiState.Loaded(result.value)
+    private suspend fun refresh() {
+        val result = Api.Movies.Id(id).get()
+
+        when(result) {
+            is Result.Error<*> -> TODO()
+            is Result.Success<MovieDetails> -> {
+                _uiState.value = MovieDetailsUiState.Loaded(result.value)
+            }
+        }
+    }
+
+    inner class AlternativeTitles {
+
+        fun delete(title: AlternativeTitle) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Titles().Id(title.id).delete()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
                 }
             }
         }
