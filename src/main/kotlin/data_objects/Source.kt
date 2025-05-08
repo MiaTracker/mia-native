@@ -10,3 +10,10 @@ data class Source(
     val url: String,
     val type: SourceType
 )
+
+@Serializable
+data class SourceCreate(
+    val name: String,
+    val type: SourceType,
+    val url: String,
+)

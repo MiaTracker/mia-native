@@ -34,8 +34,22 @@ fun InlineTextField(
     onValueChange: (String) -> Unit,
     onDone: () -> Unit = {},
     placeholder: String? = null,
+    alignment: Alignment.Horizontal = Alignment.Start,
     modifier: Modifier = Modifier,
 ) {
+    val blockAlignment = when(alignment) {
+        Alignment.Start -> Alignment.CenterStart
+        Alignment.End -> Alignment.CenterEnd
+        Alignment.CenterHorizontally -> Alignment.Center
+        else -> throw IllegalArgumentException()
+    }
+    val textAlignment = when(alignment) {
+        Alignment.Start -> TextAlign.Start
+        Alignment.End -> TextAlign.End
+        Alignment.CenterHorizontally -> TextAlign.Center
+        else -> throw IllegalArgumentException()
+    }
+
     val interactionsSource = remember { MutableInteractionSource() }
 
     val isFocused by interactionsSource.collectIsFocusedAsState()
@@ -48,7 +62,7 @@ fun InlineTextField(
             color =
                 if(isFocused) TextFieldDefaults.colors().focusedTextColor
                 else TextFieldDefaults.colors().unfocusedTextColor,
-            textAlign = TextAlign.Center
+            textAlign = textAlignment
         ),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -60,14 +74,14 @@ fun InlineTextField(
             .padding(10.dp, 1.dp)
             .onKeyEvent { event ->
                 if(event.key == Key.Enter) {
-                    onDone()
+                    if(event.type == KeyEventType.KeyDown) onDone()
                     return@onKeyEvent true
                 } else return@onKeyEvent false
             },
         decorationBox = { innerTextField ->
             if(placeholder != null) {
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = modifier
                 ) {
                     if(value.isEmpty()) {
                         Text(
@@ -75,12 +89,12 @@ fun InlineTextField(
                             color =
                                 if(isFocused) TextFieldDefaults.colors().focusedPlaceholderColor
                                 else TextFieldDefaults.colors().unfocusedPlaceholderColor,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            textAlign = textAlignment,
+                            modifier = modifier
                         )
                     }
                     Box(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier.align(blockAlignment),
                     ) {
                         innerTextField()
                     }
@@ -96,13 +110,16 @@ fun InlineTextField(
 fun InlineDropdown(
     options: List<String>,
     selectedIdx: Int,
-    onSelectedIdxChanged: (Int) -> Unit
+    onSelectedIdxChanged: (Int) -> Unit,
+    width: Dp? = null,
 ) {
-    val textMeasurer = rememberTextMeasurer()
     val textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
-    val baseWidth = options.maxOfOrNull { textMeasurer.measure(it, textStyle).size.width } ?: 0
 
-    val width = max(baseWidth.dp, 100.dp)
+    val width = if(width == null) {
+        val textMeasurer = rememberTextMeasurer()
+        val baseWidth = options.maxOfOrNull { textMeasurer.measure(it, textStyle).size.width } ?: 0
+        max(baseWidth.dp, 100.dp)
+    } else width
 
     val focusManager = LocalFocusManager.current
 

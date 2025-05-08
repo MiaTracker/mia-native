@@ -6,21 +6,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
@@ -28,6 +25,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import components.*
 import data_objects.MovieDetails
+import data_objects.Source
 import enums.SourceType
 import io.ktor.http.*
 import view_models.MovieDetailsUiState
@@ -79,96 +77,7 @@ fun MovieDetailsView(movieId: Int, viewModel: MovieDetailsViewModel = viewModel 
                             )
                         }
 
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Text(
-                                    text = "Sources:",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.weight(2f)
-                                        ) {
-                                            val focusManager = LocalFocusManager.current
-
-                                            var nameText by remember { mutableStateOf("") }
-                                            var urlText by remember { mutableStateOf("") }
-
-                                            val focusRequester = remember { FocusRequester() }
-
-                                            InlineTextField(
-                                                value = nameText,
-                                                onValueChange = { nameText = it },
-                                                onDone = { focusManager.moveFocus(FocusDirection.Right) },
-                                                placeholder = "Name",
-                                                modifier = Modifier
-                                                    .focusRequester(focusRequester)
-                                                    .weight(2f)
-                                            )
-
-                                            var selectedTypeIdx by remember { mutableStateOf(0) }
-
-                                            InlineDropdown(
-                                                options = SourceType.entries.map { it.name },
-                                                selectedIdx = selectedTypeIdx,
-                                                onSelectedIdxChanged = { selectedTypeIdx = it },
-                                            )
-
-                                            InlineTextField(
-                                                value = urlText,
-                                                onValueChange = { urlText = it },
-                                                onDone = { },
-                                                placeholder = "Url",
-                                                modifier = Modifier
-                                                        .weight(5f)
-                                            )
-
-                                            LaunchedEffect(Unit) {
-                                                focusRequester.requestFocus()
-                                            }
-                                        }
-
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                        ) {
-                                            TagIcon(
-                                                onClick = {}
-                                            ) {
-                                                Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                                            }
-
-                                            AddButton(onClick = {
-
-                                            })
-                                        }
-                                    }
-
-                                }
-
-                            }
-
-                            SourcesList(
-                                sources = details.sources,
-                                onEdit = {},
-                                onDelete = { source ->
-                                    viewModel.Sources().delete(source)
-                                }
-                            )
-                        }
+                        Sources(viewModel.Sources(), details.sources)
                     }
                 }
 
@@ -355,5 +264,92 @@ fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: M
                 )
             }
         }
+    }
+}
+
+@Composable
+fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Source>) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Sources:",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            var adding by remember { mutableStateOf(false) }
+
+            if(adding) {
+                var nameText by remember { mutableStateOf("") }
+                var sourceType by remember { mutableStateOf(SourceType.Torrent) }
+                var urlText by remember { mutableStateOf("") }
+
+                fun isSourceValid() = !nameText.isBlank() && !urlText.isBlank()
+
+                fun clearSource() {
+                    nameText = ""
+                    sourceType = SourceType.Torrent
+                    urlText = ""
+                    adding = false
+                }
+
+                fun commitSource() {
+                    if(!isSourceValid()) return
+                    sourcesViewModel.create(nameText, sourceType, urlText)
+                    clearSource()
+                }
+
+                val focusRequester = remember { FocusRequester() }
+
+                Source(
+                    editable = true,
+                    name = nameText,
+                    nameWidth = null,
+                    type = sourceType,
+                    typeWidth = null,
+                    url = urlText,
+                    focusRequester = focusRequester,
+                    onNameChange = { nameText = it },
+                    onTypeChange = { sourceType = it },
+                    onUrlChange = { urlText = it },
+                    onCommit = {},
+                ) {
+                    TagIcon(
+                        onClick = { clearSource() }
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                    }
+
+                    InlineIconButton(onClick = {
+                        commitSource()
+                    }) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
+            }
+            else {
+                InlineIconButton(onClick = {
+                    adding = true
+                }) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
+            }
+        }
+
+        SourcesList(
+            sources = sources,
+            onEdit = {},
+            onDelete = { source ->
+                sourcesViewModel.delete(source)
+            },
+            modifier = Modifier
+                .padding(vertical = 10.dp)
+        )
     }
 }

@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonNamingStrategy
 
 object Api {
     private const val BASE_URL = "http://localhost:3000"
-    private const val AUTHORIZATION_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkM2MxNWM4Yi00NDdmLTRlYWMtYTY4ZC1iNDQ1NDQ3ZmRjZGUiLCJpYXQiOjE3NDY2MDgwODgsImV4cCI6MTc1MTc5MjA4OCwidHlwZSI6IlVzZXJUb2tlbiJ9.NXf9Mx6s9DxxqOPWe5FchlziMAG9a4bHj3mJscZc92c"
+    private const val AUTHORIZATION_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjkwOWZiOS0zOGU3LTRhMmQtYWM4YS1lMjY1ZTYwYmE5YTkiLCJpYXQiOjE3NDY3MTUyODksImV4cCI6MTc1MTg5OTI4OSwidHlwZSI6IlVzZXJUb2tlbiJ9.RgFqJFu92fpKwLVB_9BpucHxbYzeqUjaoDM2jmEp2bk"
 
     @OptIn(ExperimentalSerializationApi::class)
     private val _json = Json {
@@ -231,6 +231,29 @@ object Api {
             }
 
             inner class Sources {
+                suspend fun create(source: SourceCreate): Result<Unit> {
+                    val requestBody = _json.encodeToString(source)
+
+                    val response = httpClient().use { client ->
+                        client.post(BASE_URL) {
+                            header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                            header(HttpHeaders.ContentType, "application/json")
+                            url {
+                                appendPathSegments("movies", movieId.toString(), "sources")
+                            }
+                            setBody(requestBody)
+                        }
+                    }
+
+
+                    return if(response.status.isSuccess()) {
+                        Result.Success(Unit)
+                    } else {
+                        val body = response.bodyAsText()
+                        Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                    }
+                }
+
                 inner class Id(
                     val sourceId: Int
                 ) {

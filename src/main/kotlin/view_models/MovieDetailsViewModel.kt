@@ -8,9 +8,11 @@ import data_objects.GenreCreate
 import data_objects.MovieDetails
 import data_objects.Result
 import data_objects.Source
+import data_objects.SourceCreate
 import data_objects.Tag
 import data_objects.TagCreate
 import data_objects.TitleCreate
+import enums.SourceType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -155,6 +157,26 @@ class MovieDetailsViewModel(
     }
 
     inner class Sources {
+        fun create(name: String, type: SourceType, url: String) {
+            if(name.isBlank() || url.isBlank()) return
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Sources().create(
+                    source = SourceCreate(
+                        name = name,
+                        type = type,
+                        url = url,
+                    )
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
         fun delete(source: Source) {
             viewModelScope.launch {
                 val result = Api.Movies.Id(id).Sources().Id(source.id).delete()

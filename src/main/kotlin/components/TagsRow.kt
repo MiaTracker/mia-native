@@ -3,6 +3,9 @@ package components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -69,12 +72,14 @@ fun TagsRow(modifier: Modifier = Modifier, onAdd: (String) -> Unit, tags: @Compo
                     }
                 }
 
-                AddButton(onClick = {
+                InlineIconButton(onClick = {
                     if(adding) {
                         commitTag()
                     }
                     else adding = true
-                })
+                }) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
             }
         }
     }
