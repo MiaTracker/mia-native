@@ -1,21 +1,11 @@
-import data_objects.ApiErrorList
-import data_objects.MediaIndex
+import data_objects.*
 import data_objects.MovieDetails
-import data_objects.Result
-import data_objects.TitleCreate
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpHeaders
-import io.ktor.http.appendPathSegments
-import io.ktor.http.isSuccess
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 
@@ -106,6 +96,24 @@ object Api {
                     private val titleId: Int
                 ) {
 
+                    suspend fun primary(): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.post(BASE_URL) {
+                                header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                                url {
+                                    appendPathSegments("movies", movieId.toString(), "titles", titleId.toString(), "primary")
+                                }
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            val body = response.bodyAsText()
+                            Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                        }
+                    }
+
                     suspend fun delete(): Result<Unit> {
                         val response = httpClient().use { client ->
                             client.delete(BASE_URL) {
@@ -123,7 +131,125 @@ object Api {
                             val body = response.bodyAsText()
                             Result.Error(_json.decodeFromString<ApiErrorList>(body))
                         }
+                    }
+                }
+            }
 
+            inner class Genres {
+                suspend fun create(genre: GenreCreate): Result<Unit> {
+                    val requestBody = _json.encodeToString(genre)
+
+                    val response = httpClient().use { client ->
+                        client.post(BASE_URL) {
+                            header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                            header(HttpHeaders.ContentType, "application/json")
+                            url {
+                                appendPathSegments("movies", movieId.toString(), "genres")
+                            }
+                            setBody(requestBody)
+                        }
+                    }
+
+
+                    return if(response.status.isSuccess()) {
+                        Result.Success(Unit)
+                    } else {
+                        val body = response.bodyAsText()
+                        Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                    }
+                }
+
+                inner class Id(
+                    val genreId: Int
+                ) {
+                    suspend fun delete(): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.delete(BASE_URL) {
+                                header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                                url {
+                                    appendPathSegments("movies", movieId.toString(), "genres", genreId.toString())
+                                }
+                            }
+                        }
+
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            val body = response.bodyAsText()
+                            Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                        }
+                    }
+                }
+            }
+
+            inner class Tags {
+                suspend fun create(tag: TagCreate): Result<Unit> {
+                    val requestBody = _json.encodeToString(tag)
+
+                    val response = httpClient().use { client ->
+                        client.post(BASE_URL) {
+                            header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                            header(HttpHeaders.ContentType, "application/json")
+                            url {
+                                appendPathSegments("movies", movieId.toString(), "tags")
+                            }
+                            setBody(requestBody)
+                        }
+                    }
+
+
+                    return if(response.status.isSuccess()) {
+                        Result.Success(Unit)
+                    } else {
+                        val body = response.bodyAsText()
+                        Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                    }
+                }
+
+                inner class Id(
+                    val tagId: Int
+                ) {
+                    suspend fun delete(): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.delete(BASE_URL) {
+                                header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                                url {
+                                    appendPathSegments("movies", movieId.toString(), "tags", tagId.toString())
+                                }
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            val body = response.bodyAsText()
+                            Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                        }
+                    }
+                }
+            }
+
+            inner class Sources {
+                inner class Id(
+                    val sourceId: Int
+                ) {
+                    suspend fun delete(): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.delete(BASE_URL) {
+                                header(HttpHeaders.Authorization, "Bearer $AUTHORIZATION_TOKEN")
+                                url {
+                                    appendPathSegments("movies", movieId.toString(), "sources", sourceId.toString())
+                                }
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            val body = response.bodyAsText()
+                            Result.Error(_json.decodeFromString<ApiErrorList>(body))
+                        }
                     }
                 }
             }

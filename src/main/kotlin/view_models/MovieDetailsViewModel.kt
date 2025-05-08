@@ -3,8 +3,13 @@ package view_models
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data_objects.AlternativeTitle
+import data_objects.Genre
+import data_objects.GenreCreate
 import data_objects.MovieDetails
 import data_objects.Result
+import data_objects.Source
+import data_objects.Tag
+import data_objects.TagCreate
 import data_objects.TitleCreate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,9 +52,112 @@ class MovieDetailsViewModel(
 
     inner class AlternativeTitles {
 
+        fun create(name: String) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Titles().create(
+                    TitleCreate(name = name)
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<Unit> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun setPrimary(title: AlternativeTitle) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Titles().Id(title.id).primary()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<Unit> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
         fun delete(title: AlternativeTitle) {
             viewModelScope.launch {
                 val result = Api.Movies.Id(id).Titles().Id(title.id).delete()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+    }
+
+    inner class Genres {
+        fun create(name: String) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Genres().create(
+                    GenreCreate(name = name)
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<Unit> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun delete(genre: Genre) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Genres().Id(genre.id).delete()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+    }
+
+    inner class Tags {
+        fun create(name: String) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Tags().create(
+                    TagCreate(name = name)
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<Unit> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun delete(tag: Tag) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Tags().Id(tag.id).delete()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+    }
+
+    inner class Sources {
+        fun delete(source: Source) {
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Sources().Id(source.id).delete()
 
                 when(result) {
                     is Result.Error<*> -> TODO()

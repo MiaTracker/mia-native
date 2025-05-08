@@ -43,6 +43,8 @@ compose.desktop {
     application {
         mainClass = "MainKt"
 
+        jvmArgs("-Dawt.toolkit.name=WLToolkit")
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "mia_native"

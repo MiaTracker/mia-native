@@ -7,3 +7,8 @@ data class Tag(
     val id: Int,
     val name: String
 )
+
+@Serializable
+data class TagCreate(
+    val name: String
+)
