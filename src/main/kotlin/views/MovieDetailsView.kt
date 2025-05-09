@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -269,6 +268,14 @@ fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: M
 
 @Composable
 fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Source>) {
+    data class EditedSource(
+        val id: Int?,
+        val name: String,
+        val type: SourceType,
+        val url: String
+    )
+    var editedSource by remember { mutableStateOf<EditedSource?>(null) }
+
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -279,77 +286,48 @@ fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Sourc
                 style = MaterialTheme.typography.titleMedium
             )
 
-            var adding by remember { mutableStateOf(false) }
-
-            if(adding) {
-                var nameText by remember { mutableStateOf("") }
-                var sourceType by remember { mutableStateOf(SourceType.Torrent) }
-                var urlText by remember { mutableStateOf("") }
-
-                fun isSourceValid() = !nameText.isBlank() && !urlText.isBlank()
-
-                fun clearSource() {
-                    nameText = ""
-                    sourceType = SourceType.Torrent
-                    urlText = ""
-                    adding = false
-                }
-
-                fun commitSource() {
-                    if(!isSourceValid()) return
-                    sourcesViewModel.create(nameText, sourceType, urlText)
-                    clearSource()
-                }
-
-                val focusRequester = remember { FocusRequester() }
-
-                Source(
-                    editable = true,
-                    name = nameText,
-                    nameWidth = null,
-                    type = sourceType,
-                    typeWidth = null,
-                    url = urlText,
-                    focusRequester = focusRequester,
-                    onNameChange = { nameText = it },
-                    onTypeChange = { sourceType = it },
-                    onUrlChange = { urlText = it },
-                    onCommit = {},
-                ) {
-                    TagIcon(
-                        onClick = { clearSource() }
-                    ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                    }
-
-                    InlineIconButton(onClick = {
-                        commitSource()
-                    }) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                    }
-                }
-
-                LaunchedEffect(Unit) {
-                    focusRequester.requestFocus()
-                }
-            }
-            else {
-                InlineIconButton(onClick = {
-                    adding = true
-                }) {
-                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                }
+            InlineIconButton(onClick = {
+                editedSource = EditedSource(
+                    id = null,
+                    name = "",
+                    type = SourceType.Torrent,
+                    url = ""
+                )
+            }) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
             }
         }
 
         SourcesList(
             sources = sources,
-            onEdit = {},
+            onEdit = { source ->
+                editedSource = EditedSource(
+                    id = source.id,
+                    name = source.name,
+                    type = source.type,
+                    url = source.url
+                )
+            },
             onDelete = { source ->
                 sourcesViewModel.delete(source)
             },
             modifier = Modifier
                 .padding(vertical = 10.dp)
+        )
+    }
+
+    editedSource?.let { source ->
+        SourceEditDialog(
+            name = source.name,
+            type = source.type,
+            url = source.url,
+            onCancelRequest = { editedSource = null },
+            onSaveRequest = { name, type, url ->
+                if(source.id == null)
+                    sourcesViewModel.create(name, type, url)
+                else sourcesViewModel.update(source.id, name, type, url)
+                editedSource = null
+            },
         )
     }
 }

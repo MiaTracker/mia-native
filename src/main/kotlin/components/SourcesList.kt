@@ -2,24 +2,19 @@ package components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import data_objects.Source
 import enums.SourceType
@@ -75,54 +70,47 @@ fun SourcesList(sources: List<Source>, onEdit: (Source) -> Unit, onDelete: (Sour
             }
         }
 
-        for (originalSource in sources) {
-            val focusRequester = remember { FocusRequester() }
-
-            var source by remember { mutableStateOf(originalSource) }
-
-            var editable by remember { mutableStateOf(false) }
-
-            Source(
-                name = source.name,
-                type = source.type,
-                url = source.url,
-                focusRequester = focusRequester,
-                editable = editable,
-                nameWidth = nameWidth.dp,
-                typeWidth = typeWidth.dp,
-                onNameChange = { name -> source = source.copy(name = name) },
-                onTypeChange = { type -> source = source.copy(type = type) },
-                onUrlChange = { url -> source = source.copy(url = url) },
-                onCommit = {},
-                modifier = if(editable) Modifier.padding(start = 10.dp) else Modifier.padding(horizontal = 10.dp)
+        for (source in sources) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = MaterialTheme.shapes.small
             ) {
-                if(editable) {
-                    TagIcon(
-                        onClick = {
-                            editable = false
-                            source = originalSource
+                SourceRow(
+                    modifier = Modifier.padding(horizontal = 10.dp)
+                ) {
+                    SourceLabel(
+                        text = source.name,
+                        modifier = Modifier
+                            .width(nameWidth.dp)
+                    )
+
+                    SourceLabel(
+                        text = source.type.name,
+                        modifier = Modifier.width(typeWidth.dp)
+                    )
+
+                    SourceLabel(
+                        text = source.url,
+                        modifier = Modifier.weight(2f)
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                    ) {
+                        TagIcon(
+                            onClick = { onEdit(source) }
+                        ) {
+                            Icon(imageVector = Icons.Default.Edit, contentDescription = null)
                         }
-                    ) {
-                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
-                    }
 
-                    InlineIconButton(
-                        onClick = { editable = false }
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null)
-                    }
-                }
-                else {
-                    TagIcon(
-                        onClick = { editable = true }
-                    ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                    }
-
-                    TagIcon(
-                        onClick = { onDelete(source) }
-                    ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                        TagIcon(
+                            onClick = { onDelete(source) }
+                        ) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                        }
                     }
                 }
             }
@@ -154,83 +142,123 @@ fun SourceLabel(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+
 @Composable
-fun Source(
-    editable: Boolean,
+fun SourceEditDialog(
     name: String,
-    nameWidth: Dp?,
     type: SourceType,
-    typeWidth: Dp?,
     url: String,
-    focusRequester: FocusRequester,
-    onNameChange: (String) -> Unit,
-    onTypeChange: (SourceType) -> Unit,
-    onUrlChange: (String) -> Unit,
-    onCommit: () -> Unit,
-    modifier: Modifier = Modifier,
-    actions: @Composable RowScope.() -> Unit
+    onCancelRequest: () -> Unit,
+    onSaveRequest: (name: String, type: SourceType, url: String) -> Unit
 ) {
+
+    var name by remember { mutableStateOf(name) }
+    var type by remember { mutableStateOf(type) }
+    var url by remember { mutableStateOf(url) }
+
+    var isTypeDropdownExpanded by remember { mutableStateOf(false) }
+
+    val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
+    val isValid = name.isNotBlank()
 
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.small,
-        modifier = Modifier
-            .fillMaxWidth()
+    EditDialog(
+        onCancelRequest = onCancelRequest,
+        onSaveRequest = {
+            onSaveRequest(name, type, url)
+        },
+        title = "Edit source",
+        isValid = isValid
     ) {
-        SourceRow(modifier) {
-            if(editable) {
-                InlineTextField(
-                    value = name,
-                    onValueChange = onNameChange,
-                    onDone = { focusManager.moveFocus(FocusDirection.Right) },
-                    placeholder = "Name",
-                    alignment = Alignment.CenterHorizontally,
-                    modifier = nameWidth?.let { Modifier.requiredWidth(it) } ?: Modifier.weight(2f)
-                        .focusRequester(focusRequester)
-                )
-
-                InlineDropdown(
-                    options = SourceType.entries.map { it.name },
-                    selectedIdx = type.ordinal,
-                    onSelectedIdxChanged = { onTypeChange(SourceType.entries[it]) },
-                )
-
-                InlineTextField(
-                    value = url,
-                    onValueChange = onUrlChange,
-                    onDone = onCommit,
-                    placeholder = "Url",
-                    alignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .weight(5f)
-                )
-            } else {
-                SourceLabel(
-                    text = name,
-                    modifier = nameWidth?.let { Modifier.width(it) } ?: Modifier.weight(2f)
-                )
-
-                SourceLabel(
-                    text = type.name,
-                    modifier = typeWidth?.let { Modifier.width(it) } ?: Modifier.weight(1f)
-                )
-
-                SourceLabel(
-                    text = url,
-                    modifier = Modifier.weight(5f)
-                )
-            }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .fillMaxWidth()
             ) {
-                actions()
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = {
+                        Text("Name")
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .weight(2f)
+                        .focusRequester(focusRequester)
+                        .onKeyEvent { event ->
+                            if(event.key == Key.Enter) {
+                                if(event.type == KeyEventType.KeyDown)
+                                    focusManager.moveFocus(FocusDirection.Right)
+                                true
+                            } else false
+                        }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(2f)
+                ) {
+                    TextField(
+                        value = type.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(text = "Type") },
+                        modifier = Modifier
+                            .onFocusEvent { event ->
+                                if(event.hasFocus) isTypeDropdownExpanded = true
+                            }
+                            .fillMaxWidth()
+                    )
+
+                    DropdownMenu(
+                        expanded = isTypeDropdownExpanded,
+                        onDismissRequest = {
+                            isTypeDropdownExpanded = false
+                        },
+                        modifier = Modifier
+                    ) {
+                        SourceType.entries.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(text = item.name) },
+                                onClick = {
+                                    type = item
+                                    isTypeDropdownExpanded = false
+                                    focusManager.moveFocus(FocusDirection.Right)
+                                }
+                            )
+                        }
+                    }
+                }
             }
+
+            TextField(
+                value = url,
+                onValueChange = { url = it },
+                label = {
+                    Text("Url")
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onKeyEvent { event ->
+                        if(event.key == Key.Enter) {
+                            if(event.type == KeyEventType.KeyDown && isValid)
+                                onSaveRequest(name, type, url)
+                            true
+                        } else false
+                    }
+            )
         }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 }

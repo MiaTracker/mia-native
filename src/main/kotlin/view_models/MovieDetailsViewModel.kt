@@ -158,7 +158,7 @@ class MovieDetailsViewModel(
 
     inner class Sources {
         fun create(name: String, type: SourceType, url: String) {
-            if(name.isBlank() || url.isBlank()) return
+            if(name.isBlank()) return
             viewModelScope.launch {
                 val result = Api.Movies.Id(id).Sources().create(
                     source = SourceCreate(
@@ -175,6 +175,28 @@ class MovieDetailsViewModel(
                     }
                 }
             }
+        }
+
+        fun update(sourceId: Int, name: String, type: SourceType, url: String) {
+            if(name.isBlank()) return
+            viewModelScope.launch {
+                val result = Api.Movies.Id(id).Sources().Id(sourceId).update(
+                    source = Source(
+                        id = sourceId,
+                        name = name,
+                        type = type,
+                        url = url,
+                    )
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+
         }
 
         fun delete(source: Source) {
