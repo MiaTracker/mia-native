@@ -212,4 +212,8 @@ class MovieDetailsViewModel(
             }
         }
     }
+
+    inner class Logs {
+
+    }
 }
