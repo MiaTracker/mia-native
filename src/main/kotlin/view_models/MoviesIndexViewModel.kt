@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 
 sealed interface MainUiState {
     object Loading : MainUiState
@@ -25,7 +26,7 @@ class MoviesIndexViewModel : ViewModel() {
     }
 
     private fun load() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val result = Api.Movies.index()
             when (result) {
                 is Result.Error<*> -> TODO()

@@ -19,7 +19,7 @@ fun App() {
             modifier = Modifier.clickable(interactionSource = null, indication = null) { }
         ) {
             Surface {
-                Navigation()
+                RootNavigation()
             }
         }
     }

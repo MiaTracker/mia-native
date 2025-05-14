@@ -13,6 +13,7 @@ import data_objects.Tag
 import data_objects.TagCreate
 import data_objects.TitleCreate
 import enums.SourceType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +37,7 @@ class MovieDetailsViewModel(
     }
 
     private fun load() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             refresh()
         }
     }
@@ -55,7 +56,7 @@ class MovieDetailsViewModel(
     inner class AlternativeTitles {
 
         fun create(name: String) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Titles().create(
                     TitleCreate(name = name)
                 )
@@ -70,7 +71,7 @@ class MovieDetailsViewModel(
         }
 
         fun setPrimary(title: AlternativeTitle) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Titles().Id(title.id).primary()
 
                 when(result) {
@@ -83,7 +84,7 @@ class MovieDetailsViewModel(
         }
 
         fun delete(title: AlternativeTitle) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Titles().Id(title.id).delete()
 
                 when(result) {
@@ -98,7 +99,7 @@ class MovieDetailsViewModel(
 
     inner class Genres {
         fun create(name: String) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Genres().create(
                     GenreCreate(name = name)
                 )
@@ -113,7 +114,7 @@ class MovieDetailsViewModel(
         }
 
         fun delete(genre: Genre) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Genres().Id(genre.id).delete()
 
                 when(result) {
@@ -128,7 +129,7 @@ class MovieDetailsViewModel(
 
     inner class Tags {
         fun create(name: String) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Tags().create(
                     TagCreate(name = name)
                 )
@@ -143,7 +144,7 @@ class MovieDetailsViewModel(
         }
 
         fun delete(tag: Tag) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Tags().Id(tag.id).delete()
 
                 when(result) {
@@ -159,7 +160,7 @@ class MovieDetailsViewModel(
     inner class Sources {
         fun create(name: String, type: SourceType, url: String) {
             if(name.isBlank()) return
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Sources().create(
                     source = SourceCreate(
                         name = name,
@@ -179,7 +180,7 @@ class MovieDetailsViewModel(
 
         fun update(sourceId: Int, name: String, type: SourceType, url: String) {
             if(name.isBlank()) return
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Sources().Id(sourceId).update(
                     source = Source(
                         id = sourceId,
@@ -200,7 +201,7 @@ class MovieDetailsViewModel(
         }
 
         fun delete(source: Source) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 val result = Api.Movies.Id(id).Sources().Id(source.id).delete()
 
                 when(result) {

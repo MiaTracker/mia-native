@@ -1,5 +1,6 @@
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,38 +15,89 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import views.LoginView
 import views.MovieDetailsView
 import views.MoviesIndexView
 
-@Serializable
-object MoviesIndex
 
-@Serializable
-data class MovieDetails(
-    val movieId: Int
-)
 
-@OptIn(ExperimentalMaterial3Api::class)
+object Navigation {
+    @Serializable
+    object Login
+
+    @Serializable
+    object Inner {
+        @Serializable
+        object MoviesIndex
+
+        @Serializable
+        data class MovieDetails(
+            val movieId: Int
+        )
+    }
+}
+
+
 @Composable
-fun Navigation() {
+fun RootNavigation() {
     val navController = rememberNavController()
-
-    val scope = rememberCoroutineScope()
 
     val drawerState = rememberDrawerState(DrawerValue.Open)
 
+    NavHost(navController, startDestination = Navigation.Login) {
+        composable<Navigation.Login> {
+            LoginView(
+                navController = navController
+            )
+        }
+        navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
+            composable<Navigation.Inner.MoviesIndex> {
+                InnerNavigation(
+                    navController = navController,
+                    drawerState = drawerState
+                ) {
+                    MoviesIndexView(navController)
+                }
+            }
+            composable<Navigation.Inner.MovieDetails> { backStackEntry ->
+                val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
+
+                InnerNavigation(
+                    navController = navController,
+                    drawerState = drawerState
+                ) {
+                    MovieDetailsView(movieDetails.movieId)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InnerNavigation(
+    navController: NavHostController,
+    drawerState: DrawerState,
+    content: @Composable () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+
     val backstack by navController.currentBackStackEntryAsState()
+    val isOnRoot = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true
 
-    val isOnRoot = backstack?.destination?.hasRoute<MoviesIndex>() == true
 
-    Column {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
         TopAppBar(
             title = { Text("Movies") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -87,27 +139,20 @@ fun Navigation() {
                         NavigationDrawerItem(
                             label = { Text("Movies") },
                             icon = { Icon(Icons.Default.Movie, null) },
-                            selected = backstack?.destination?.hasRoute<MoviesIndex>() == true,
+                            selected = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true,
                             onClick = {
-                                navController.navigate(MoviesIndex)
-                            }
+                                navController.navigate(Navigation.Inner.MoviesIndex)
+                            },
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
                         )
                     }
                 }
             },
             content = {
-                NavHost(navController, startDestination = MoviesIndex) {
-                    composable<MoviesIndex> {
-                        MoviesIndexView(navController)
-                    }
-                    composable<MovieDetails> { backStackEntry ->
-                        val movieDetails: MovieDetails = backStackEntry.toRoute()
-                        MovieDetailsView(movieDetails.movieId)
-                    }
-                }
+                content()
             },
             drawerState = drawerState
         )
     }
-
 }

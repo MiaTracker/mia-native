@@ -1,6 +1,5 @@
 package views
 
-import MovieDetails
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -50,7 +49,7 @@ fun MoviesIndexView(navController: NavController, viewModel: MoviesIndexViewMode
                         media = media,
                         modifier = Modifier
                             .onClick {
-                                navController.navigate(MovieDetails(media.id))
+                                navController.navigate(Navigation.Inner.MovieDetails(media.id))
                             }
                     )
                 }
