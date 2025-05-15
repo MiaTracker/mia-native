@@ -178,16 +178,11 @@ class MovieDetailsViewModel(
             }
         }
 
-        fun update(sourceId: Int, name: String, type: SourceType, url: String) {
-            if(name.isBlank()) return
+        fun update(source: Source) {
+            if(source.name.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Sources().Id(sourceId).update(
-                    source = Source(
-                        id = sourceId,
-                        name = name,
-                        type = type,
-                        url = url,
-                    )
+                val result = Api.instance.Movies().Id(id).Sources().Id(source.id).update(
+                    source = source
                 )
 
                 when(result) {

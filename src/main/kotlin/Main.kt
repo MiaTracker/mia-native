@@ -18,7 +18,9 @@ fun App() {
         Box(
             modifier = Modifier.clickable(interactionSource = null, indication = null) { }
         ) {
-            Surface {
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+            ) {
                 RootNavigation()
             }
         }

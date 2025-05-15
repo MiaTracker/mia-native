@@ -11,6 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,8 +37,6 @@ import view_models.MovieDetailsViewModel
 fun MovieDetailsView(movieId: Int, viewModel: MovieDetailsViewModel = viewModel { MovieDetailsViewModel(movieId) } ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    val density = LocalDensity.current
-
     when (val state = uiState) {
         is MovieDetailsUiState.Loading -> Text("Loading...")
         is MovieDetailsUiState.Loaded -> {
@@ -48,126 +47,61 @@ fun MovieDetailsView(movieId: Int, viewModel: MovieDetailsViewModel = viewModel 
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .heightIn(min = 800.dp),
+                    .wrapContentHeight(),
             ) {
 
-//                SubcomposeLayout { constraints -> //TODO: layout
-//
-//                     val placeables = subcompose(1) {
-//                    Column(
-//                        modifier = Modifier
-//                    ) {
-//                        Box(
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) {
-//                            Backdrop(details.backdropPath)
-//                            TitlePanel(
-//                                details = details,
-//                                modifier = Modifier
-//                                    .align(Alignment.BottomCenter),
-//                            )
-//                        }
-//
-//                        Column(
-//                            verticalArrangement = Arrangement.spacedBy(10.dp),
-//                            modifier = Modifier
-//                                .padding(start = 340.dp, top = 10.dp, end = 20.dp, bottom = 0.dp)
-//                        ) {
-//
-//                            TagRows(
-//                                viewModel = viewModel,
-//                                details = details
-//                            )
-//
-//                            details.overview?.let { overview ->
-//                                Text(
-//                                    text = details.overview
-//                                )
-//                            }
-//
-//                            Sources(viewModel.Sources(), details.sources)
-//                        }
-//                    }
-//
-//                     }.map { it.measure(constraints) }
-//
-//                     val baseHeightPx = placeables.sumOf{ it.height }
-//
-//                     val baseHeight = with(density) { baseHeightPx.toDp() }
-//
-//                     val offset = max(baseHeight, 800.dp)
-//
-//                     val dependentPlaceables = subcompose(2) {
-//                         Column(
-//                             modifier = Modifier
-//                                 .padding(horizontal = 20.dp, vertical = 0.dp)
-//                                 .background(Color.Red)
-//                                 .fillMaxSize()
-//                         ) {
-//                             Logs(
-//                                 logsViewModel = viewModel.Logs(),
-//                                 logs = details.logs
-//                             )
-//                         }
-//                     }.map { it.measure(constraints) }
-//
-//                    val maxWidth = (placeables + dependentPlaceables).maxOfOrNull { it.width } ?: 0
-//                    val sumHeight = (placeables + dependentPlaceables).sumOf { it.height }
-//
-//                    layout(maxWidth, sumHeight) {
-//                         placeables.forEach { it.placeRelative(0, 0) }
-//                         dependentPlaceables.forEach { it.placeRelative(x = 0, y = offset.toPx().roundToInt()) }
-//                    }
-//                }
-
-                Column(
-                    modifier = Modifier
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Backdrop(details.backdropPath)
-                        TitlePanel(
-                            details = details,
+                MediaDetailsLayout(
+                    header = {
+                        Column(
                             modifier = Modifier
-                                .align(Alignment.BottomCenter),
-                        )
-                    }
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Backdrop(details.backdropPath)
+                                TitlePanel(
+                                    details = details,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter),
+                                )
+                            }
+                        }
+                    },
+                    poster = {
+                        Poster(details.posterPath)
+                    },
+                    rightContent = {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                        ) {
 
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier
-                            .padding(start = 340.dp, top = 10.dp, end = 20.dp, bottom = 0.dp)
-                    ) {
+                            TagRows(
+                                viewModel = viewModel,
+                                details = details
+                            )
 
-                        TagRows(
-                            viewModel = viewModel,
-                            details = details
-                        )
+                            details.overview?.let { overview ->
+                                Text(
+                                    text = details.overview
+                                )
+                            }
 
-                        details.overview?.let { overview ->
-                            Text(
-                                text = details.overview
+                            Sources(viewModel.Sources(), details.sources)
+                        }
+                    },
+                    bottomContent = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            Logs(
+                                logsViewModel = viewModel.Logs(),
+                                logs = details.logs
                             )
                         }
-
-                        Sources(viewModel.Sources(), details.sources)
                     }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp, vertical = 0.dp)
-                        .background(Color.Red)
-                        .fillMaxSize()
-                ) {
-                    Logs(
-                        logsViewModel = viewModel.Logs(),
-                        logs = details.logs
-                    )
-                }
-
-                Poster(details.posterPath)
+                )
             }
         }
     }
@@ -216,7 +150,6 @@ fun Poster(posterPath: String?) {
         modifier = Modifier
             .width(300.dp)
             .height(450.dp)
-            .absoluteOffset(x = 20.dp, y = 350.dp)
     )
 }
 
@@ -387,66 +320,84 @@ fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: M
 
 @Composable
 fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Source>) {
-    data class EditedSource(
-        val id: Int?,
-        val name: String,
-        val type: SourceType,
-        val url: String
-    )
-    var editedSource by remember { mutableStateOf<EditedSource?>(null) }
 
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
         ) {
             Text(
                 text = "Sources:",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            InlineIconButton(onClick = {
-                editedSource = EditedSource(
-                    id = null,
-                    name = "",
-                    type = SourceType.Torrent,
+            var adding by remember { mutableStateOf(false) }
+
+            if (adding) {
+
+                var name by remember { mutableStateOf("") }
+                var type by remember { mutableStateOf(SourceType.Torrent) }
+                var url by remember { mutableStateOf("") }
+
+                fun clear() {
+                    name = ""
+                    type = SourceType.Torrent
                     url = ""
-                )
-            }) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                    adding = false
+                }
+
+                fun commit() {
+                    sourcesViewModel.create(name, type, url)
+                    clear()
+                }
+
+                SourceTag(
+                    editable = true,
+                    name = name,
+                    onNameChange = { name = it },
+                    type = type,
+                    onTypeChange = { type = it },
+                    url = url,
+                    onUrlChange = { url = it },
+                    nameWidth = 100.dp,
+                    onCommit = { commit() }
+                ) {
+                    TagIcon(
+                        onClick = { clear() }
+                    ) {
+                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
+                    }
+
+                    InlineIconButton(
+                        onClick = {
+                            commit()
+                        },
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                    }
+                }
+            }
+
+            if(!adding) {
+                InlineIconButton(onClick = {
+                    adding = true
+                }) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
             }
         }
 
         SourcesList(
             sources = sources,
-            onEdit = { source ->
-                editedSource = EditedSource(
-                    id = source.id,
-                    name = source.name,
-                    type = source.type,
-                    url = source.url
-                )
+            onUpdate = { source ->
+                sourcesViewModel.update(source)
             },
             onDelete = { source ->
                 sourcesViewModel.delete(source)
             },
             modifier = Modifier
                 .padding(vertical = 10.dp)
-        )
-    }
-
-    editedSource?.let { source ->
-        SourceEditDialog(
-            name = source.name,
-            type = source.type,
-            url = source.url,
-            onCancelRequest = { editedSource = null },
-            onSaveRequest = { name, type, url ->
-                if(source.id == null)
-                    sourcesViewModel.create(name, type, url)
-                else sourcesViewModel.update(source.id, name, type, url)
-                editedSource = null
-            },
         )
     }
 }

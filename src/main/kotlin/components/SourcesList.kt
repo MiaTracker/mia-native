@@ -2,19 +2,17 @@ package components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.input.key.*
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import data_objects.Source
 import enums.SourceType
@@ -22,21 +20,27 @@ import helpers.append
 import helpers.max
 
 @Composable
-fun SourcesList(sources: List<Source>, onEdit: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier) {
+fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier) {
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
 
     val nameLabel = "Name"
     val typeLabel = "Type"
     val urlLabel = "Url"
     val nameLabelWidth = remember { textMeasurer.measure(nameLabel, textStyle).size.width }
-    val typeLabelWidth = remember { textMeasurer.measure(typeLabel, textStyle).size.width }
+    val typeWidth = remember {
+        with(density) {
+            SourceType.entries.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
+                .append(textMeasurer.measure(typeLabel, textStyle).size.width).max()?.toDp() ?: 0.dp
+        } + 10.dp
+    }
 
-    val nameWidth = sources.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
-            .append(nameLabelWidth).max() ?: 0
+    val nameWidth = with(density) {
+        sources.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
+                .append(nameLabelWidth).max()?.toDp() ?: 0.dp
+    }
 
-    val typeWidth = sources.stream().map { textMeasurer.measure(it.type.name, textStyle).size.width }
-        .append(typeLabelWidth).max() ?: 0
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -45,17 +49,17 @@ fun SourcesList(sources: List<Source>, onEdit: (Source) -> Unit, onDelete: (Sour
 
         if(sources.isNotEmpty()) {
             SourceRow(
-                modifier = Modifier.padding(horizontal = 10.dp)
+                modifier = Modifier.padding(horizontal = 11.dp)
             ) {
                 SourceLabel(
                     text = nameLabel,
                     modifier = Modifier
-                        .width(nameWidth.dp)
+                        .width(nameWidth)
                 )
 
                 SourceLabel(
                     text = typeLabel,
-                    modifier = Modifier.width(typeWidth.dp)
+                    modifier = Modifier.width(typeWidth)
                 )
 
                 SourceLabel(
@@ -71,48 +75,129 @@ fun SourcesList(sources: List<Source>, onEdit: (Source) -> Unit, onDelete: (Sour
         }
 
         for (source in sources) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = MaterialTheme.shapes.small
+            var editable by remember { mutableStateOf(false) }
+
+            var name by remember(source.name) { mutableStateOf(source.name) }
+            var type by remember(source.type) { mutableStateOf(source.type) }
+            var url by remember(source.url) { mutableStateOf(source.url) }
+
+            fun clear() {
+                name = source.name
+                type = source.type
+                url = source.url
+                editable = false
+            }
+
+            fun commit() {
+                if(!editable) return
+                onUpdate(Source(source.id, name, url, type))
+                clear()
+            }
+
+            SourceTag(
+                editable = editable,
+                name = name,
+                onNameChange = { name = it },
+                type = type,
+                onTypeChange = { type = it },
+                url = url,
+                onUrlChange = { url = it },
+                nameWidth = nameWidth,
+                onCommit = { commit() }
             ) {
-                SourceRow(
-                    modifier = Modifier.padding(horizontal = 10.dp)
-                ) {
-                    SourceLabel(
-                        text = source.name,
-                        modifier = Modifier
-                            .width(nameWidth.dp)
-                    )
-
-                    SourceLabel(
-                        text = source.type.name,
-                        modifier = Modifier.width(typeWidth.dp)
-                    )
-
-                    SourceLabel(
-                        text = source.url,
-                        modifier = Modifier.weight(2f)
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxHeight()
+                if(editable) {
+                    TagIcon(
+                        onClick = { clear() }
                     ) {
-                        TagIcon(
-                            onClick = { onEdit(source) }
-                        ) {
-                            Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                        }
+                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
+                    }
 
-                        TagIcon(
-                            onClick = { onDelete(source) }
-                        ) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                        }
+                    InlineIconButton(
+                        onClick = {
+                            commit()
+                        },
+                    ) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = null)
                     }
                 }
+                else {
+                    TagIcon(
+                        onClick = { editable = true }
+                    ) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+                    }
+
+                    TagIcon(
+                        onClick = { onDelete(source) }
+                    ) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SourceTag(
+    editable: Boolean,
+    name: String,
+    onNameChange: (String) -> Unit,
+    type: SourceType,
+    onTypeChange: (SourceType) -> Unit,
+    url: String,
+    onUrlChange: (String) -> Unit,
+    nameWidth: Dp,
+    onCommit: () -> Unit,
+    actions: @Composable RowScope.() -> Unit
+) {
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.small,
+    ) {
+        SourceRow(
+            modifier =
+                if(editable) Modifier.padding(start = 11.dp)
+                    .fillMaxHeight()
+                else Modifier.padding(horizontal = 11.dp)
+        ) {
+
+            InlineTextField(
+                value = name,
+                onValueChange = onNameChange,
+                readOnly = !editable,
+                alignment = Alignment.CenterHorizontally,
+                placeholder = "Name",
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(nameWidth)
+            )
+
+            InlineDropdown(
+                options = SourceType.entries.map { it.name },
+                selectedIdx = type.ordinal,
+                onSelectedIdxChanged = { onTypeChange(SourceType.entries[it]) },
+                readOnly = !editable
+            )
+
+            InlineTextField(
+                value = url,
+                onValueChange = onUrlChange,
+                onDone = { onCommit() },
+                readOnly = !editable,
+                alignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .weight(2f)
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxHeight()
+            ) {
+                actions()
             }
         }
     }
@@ -139,126 +224,5 @@ fun SourceLabel(text: String, modifier: Modifier = Modifier) {
             text = text,
             modifier = Modifier.align(Alignment.Center)
         )
-    }
-}
-
-
-@Composable
-fun SourceEditDialog(
-    name: String,
-    type: SourceType,
-    url: String,
-    onCancelRequest: () -> Unit,
-    onSaveRequest: (name: String, type: SourceType, url: String) -> Unit
-) {
-
-    var name by remember { mutableStateOf(name) }
-    var type by remember { mutableStateOf(type) }
-    var url by remember { mutableStateOf(url) }
-
-    var isTypeDropdownExpanded by remember { mutableStateOf(false) }
-
-    val focusRequester = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
-
-    val isValid = name.isNotBlank()
-
-    EditDialog(
-        onCancelRequest = onCancelRequest,
-        onSaveRequest = {
-            onSaveRequest(name, type, url)
-        },
-        title = "Edit source",
-        isValid = isValid
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = {
-                        Text("Name")
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .weight(2f)
-                        .focusRequester(focusRequester)
-                        .onKeyEvent { event ->
-                            if(event.key == Key.Enter) {
-                                if(event.type == KeyEventType.KeyDown)
-                                    focusManager.moveFocus(FocusDirection.Right)
-                                true
-                            } else false
-                        }
-                )
-
-                Box(
-                    modifier = Modifier
-                        .weight(2f)
-                ) {
-                    TextField(
-                        value = type.name,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(text = "Type") },
-                        modifier = Modifier
-                            .onFocusEvent { event ->
-                                if(event.hasFocus) isTypeDropdownExpanded = true
-                            }
-                            .fillMaxWidth()
-                    )
-
-                    DropdownMenu(
-                        expanded = isTypeDropdownExpanded,
-                        onDismissRequest = {
-                            isTypeDropdownExpanded = false
-                        },
-                        modifier = Modifier
-                    ) {
-                        SourceType.entries.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item.name) },
-                                onClick = {
-                                    type = item
-                                    isTypeDropdownExpanded = false
-                                    focusManager.moveFocus(FocusDirection.Right)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            TextField(
-                value = url,
-                onValueChange = { url = it },
-                label = {
-                    Text("Url")
-                },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onKeyEvent { event ->
-                        if(event.key == Key.Enter) {
-                            if(event.type == KeyEventType.KeyDown && isValid)
-                                onSaveRequest(name, type, url)
-                            true
-                        } else false
-                    }
-            )
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
     }
 }
