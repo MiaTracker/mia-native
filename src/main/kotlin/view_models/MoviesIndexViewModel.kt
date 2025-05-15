@@ -27,7 +27,7 @@ class MoviesIndexViewModel : ViewModel() {
 
     private fun load() {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = Api.Movies.index()
+            val result = Api.instance.Movies().index()
             when (result) {
                 is Result.Error<*> -> TODO()
                 is Result.Success<List<MediaIndex>> -> {

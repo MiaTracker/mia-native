@@ -43,7 +43,7 @@ class MovieDetailsViewModel(
     }
 
     private suspend fun refresh() {
-        val result = Api.Movies.Id(id).get()
+        val result = Api.instance.Movies().Id(id).get()
 
         when(result) {
             is Result.Error<*> -> TODO()
@@ -57,7 +57,7 @@ class MovieDetailsViewModel(
 
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Titles().create(
+                val result = Api.instance.Movies().Id(id).Titles().create(
                     TitleCreate(name = name)
                 )
 
@@ -72,7 +72,7 @@ class MovieDetailsViewModel(
 
         fun setPrimary(title: AlternativeTitle) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Titles().Id(title.id).primary()
+                val result = Api.instance.Movies().Id(id).Titles().Id(title.id).primary()
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -85,7 +85,7 @@ class MovieDetailsViewModel(
 
         fun delete(title: AlternativeTitle) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Titles().Id(title.id).delete()
+                val result = Api.instance.Movies().Id(id).Titles().Id(title.id).delete()
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -100,7 +100,7 @@ class MovieDetailsViewModel(
     inner class Genres {
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Genres().create(
+                val result = Api.instance.Movies().Id(id).Genres().create(
                     GenreCreate(name = name)
                 )
 
@@ -115,7 +115,7 @@ class MovieDetailsViewModel(
 
         fun delete(genre: Genre) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Genres().Id(genre.id).delete()
+                val result = Api.instance.Movies().Id(id).Genres().Id(genre.id).delete()
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -130,7 +130,7 @@ class MovieDetailsViewModel(
     inner class Tags {
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Tags().create(
+                val result = Api.instance.Movies().Id(id).Tags().create(
                     TagCreate(name = name)
                 )
 
@@ -145,7 +145,7 @@ class MovieDetailsViewModel(
 
         fun delete(tag: Tag) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Tags().Id(tag.id).delete()
+                val result = Api.instance.Movies().Id(id).Tags().Id(tag.id).delete()
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -161,7 +161,7 @@ class MovieDetailsViewModel(
         fun create(name: String, type: SourceType, url: String) {
             if(name.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Sources().create(
+                val result = Api.instance.Movies().Id(id).Sources().create(
                     source = SourceCreate(
                         name = name,
                         type = type,
@@ -181,7 +181,7 @@ class MovieDetailsViewModel(
         fun update(sourceId: Int, name: String, type: SourceType, url: String) {
             if(name.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Sources().Id(sourceId).update(
+                val result = Api.instance.Movies().Id(id).Sources().Id(sourceId).update(
                     source = Source(
                         id = sourceId,
                         name = name,
@@ -202,7 +202,7 @@ class MovieDetailsViewModel(
 
         fun delete(source: Source) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.Movies.Id(id).Sources().Id(source.id).delete()
+                val result = Api.instance.Movies().Id(id).Sources().Id(source.id).delete()
 
                 when(result) {
                     is Result.Error<*> -> TODO()

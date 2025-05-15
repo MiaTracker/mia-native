@@ -1,9 +1,7 @@
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.*
@@ -24,13 +22,16 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import views.InstanceSelectionView
 import views.LoginView
 import views.MovieDetailsView
 import views.MoviesIndexView
 
 
-
 object Navigation {
+    @Serializable
+    object InstanceSelection
+
     @Serializable
     object Login
 
@@ -53,7 +54,12 @@ fun RootNavigation() {
 
     val drawerState = rememberDrawerState(DrawerValue.Open)
 
-    NavHost(navController, startDestination = Navigation.Login) {
+    NavHost(navController, startDestination = Navigation.InstanceSelection) {
+        composable<Navigation.InstanceSelection> {
+            InstanceSelectionView(
+                navController = navController
+            )
+        }
         composable<Navigation.Login> {
             LoginView(
                 navController = navController
@@ -135,17 +141,35 @@ fun InnerNavigation(
                         .width(200.dp)
                         .fillMaxHeight()
                 ) {
-                    Column{
-                        NavigationDrawerItem(
-                            label = { Text("Movies") },
-                            icon = { Icon(Icons.Default.Movie, null) },
-                            selected = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true,
-                            onClick = {
-                                navController.navigate(Navigation.Inner.MoviesIndex)
-                            },
-                            modifier = Modifier
-                                .pointerHoverIcon(PointerIcon.Hand)
-                        )
+                    Column(
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            NavigationDrawerItem(
+                                label = { Text("Movies") },
+                                icon = { Icon(Icons.Default.Movie, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.MoviesIndex)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                        }
+
+                        Column {
+                            NavigationDrawerItem(
+                                label = { Text("Logout") },
+                                icon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
+                                selected = false,
+                                onClick = {
+                                    Api.instance.loginResult = null
+                                    navController.navigate(Navigation.Login)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                        }
                     }
                 }
             },

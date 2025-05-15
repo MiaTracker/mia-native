@@ -1,26 +1,24 @@
 package views
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextField
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import Navigation
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -28,10 +26,10 @@ import view_models.LoginViewModel
 
 @Composable
 fun LoginView(navController: NavHostController, viewModel: LoginViewModel = viewModel { LoginViewModel(navController) }) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val state by viewModel.uiState.collectAsState()
 
-    fun valid() = password.isNotBlank() && username.isNotBlank()
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -47,31 +45,90 @@ fun LoginView(navController: NavHostController, viewModel: LoginViewModel = view
                     .align(Alignment.Center)
                     .width(700.dp)
             ) {
-                TextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("Username") },
-                    modifier = Modifier.fillMaxWidth(),
+                Text(
+                    text = "Login",
+                    style = MaterialTheme.typography.displayMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
                 )
 
                 TextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = state.username,
+                    onValueChange = { viewModel.setUsername(it) },
+                    label = { Text("Username") },
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
+                    },
+                    singleLine = true,
+                    isError = state.isLoginIncorrect,
+                    enabled = !state.loggingIn,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                        .onKeyEvent { event ->
+                            if(event.key == Key.Enter || event.key == Key.Tab) {
+                                if(event.type == KeyEventType.KeyDown)
+                                    focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            } else false
+                        },
+                )
+
+                TextField(
+                    value = state.password,
+                    onValueChange = { viewModel.setPassword(it) },
                     label = { Text("Password") },
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardActions = KeyboardActions(
+                        onDone = { viewModel.login() }
+                    ),
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                    },
+                    enabled = !state.loggingIn,
+                    isError = state.isLoginIncorrect,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onKeyEvent { event ->
+                            if(event.key == Key.Enter) {
+                                if(event.type == KeyEventType.KeyDown)
+                                    viewModel.login()
+                                true
+                            } else false
+                        },
                 )
 
-                Button(
-                    onClick = { viewModel.login(username, password) },
-                    enabled = valid(),
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .pointerHoverIcon(if(valid()) PointerIcon.Hand else PointerIcon.Default)
+                        .fillMaxWidth()
                 ) {
-                    Text("Login")
+                    TextButton(
+                        onClick = { navController.navigate(Navigation.InstanceSelection) },
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                    ) {
+                        Text("Change instance")
+                    }
+
+                    Button(
+                        onClick = { viewModel.login() },
+                        enabled = state.isValid && !state.loggingIn && !state.isLoginIncorrect,
+                        modifier = Modifier
+                            .pointerHoverIcon(if(state.isValid) PointerIcon.Hand else PointerIcon.Default)
+                    ) {
+                        Text("Login")
+                    }
                 }
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 }

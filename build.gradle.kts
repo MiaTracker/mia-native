@@ -3,11 +3,11 @@ import org.jetbrains.compose.reload.ComposeHotRun
 import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.compose")
-    id("org.jetbrains.compose")
-    id("org.jetbrains.compose.hot-reload") version "1.0.0-alpha09"
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("jvm") version "2.1.21"
+    kotlin("plugin.compose") version "2.1.21"
+    id("org.jetbrains.compose") version "1.8.0"
+    id("org.jetbrains.compose.hot-reload") version "1.0.0-alpha10"
+    kotlin("plugin.serialization") version "2.1.21"
 }
 
 group = "org.nara"
@@ -38,6 +38,8 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(compose.material3)
     implementation(compose.components.resources)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 }
 
 compose.desktop {
