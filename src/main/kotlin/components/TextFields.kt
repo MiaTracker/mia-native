@@ -1,18 +1,24 @@
 package components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.isTypedEvent
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -25,12 +31,15 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
+import helpers.DateVisualTransformation
+import kotlinx.datetime.LocalDate
 
 @Composable
 fun InlineTextField(
@@ -40,6 +49,8 @@ fun InlineTextField(
     placeholder: String? = null,
     alignment: Alignment.Horizontal = Alignment.Start,
     readOnly: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val blockAlignment = when(alignment) {
@@ -83,6 +94,7 @@ fun InlineTextField(
             ),
             readOnly = readOnly,
             interactionSource = interactionsSource,
+            visualTransformation = visualTransformation,
             modifier = Modifier
                 .onKeyEvent { event ->
                     if(event.key == Key.Enter) {
@@ -118,20 +130,28 @@ fun InlineTextField(
                             }
                         }
                 ) {
-                    if(placeholder != null) {
-                        if(value.isEmpty()) {
-                            Text(
-                                text = placeholder,
-                                color =
-                                    if(isFocused) TextFieldDefaults.colors().focusedPlaceholderColor
-                                    else TextFieldDefaults.colors().unfocusedPlaceholderColor,
-                                textAlign = textAlignment,
-                            )
+
+                    Row(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Box(
+                            contentAlignment = blockAlignment,
+                            modifier = Modifier.weight(2f)
+                        ) {
+                            if(placeholder != null && value.isEmpty()) {
+                                Text(
+                                    text = placeholder,
+                                    color =
+                                        if(isFocused) TextFieldDefaults.colors().focusedPlaceholderColor
+                                        else TextFieldDefaults.colors().unfocusedPlaceholderColor,
+                                    textAlign = textAlignment,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            innerTextField()
                         }
 
-                        innerTextField()
-                    } else {
-                        innerTextField()
+                        trailingIcon()
                     }
                 }
             }
@@ -357,4 +377,79 @@ fun InlineDropdown(
         @Suppress("AssignedValueIsNeverRead")
         focusNextOnRecompose = false
     }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun InlineCheckbox(
+    value: Boolean,
+    onValueChange: (Boolean) -> Unit,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val colors = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier
+            .requiredHeight(28.dp)
+            .aspectRatio(ratio = 1f, matchHeightConstraintsFirst = true)
+            .let {
+                if(!readOnly) {
+                    it.drawWithCache {
+                        onDrawBehind {
+                            drawRect(
+                                color = colors.outline,
+                                style = Stroke(width = Stroke.HairlineWidth)
+                            )
+                        }
+                    }
+                } else it
+            }
+            .onClick(
+                enabled = !readOnly
+            ) {
+                onValueChange(!value)
+            }
+    ) {
+        Icon(
+            imageVector = if(value) Icons.Filled.Check else Icons.Filled.Clear,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun InlineDateInput(
+    date: LocalDate,
+    onDateChange: (LocalDate) -> Unit,
+) {
+
+    var text by remember {
+        mutableStateOf(
+            date.year.toString(4) + date.monthNumber.toString(2) + date.dayOfMonth.toString(2)
+        )
+    }
+
+    InlineTextField(
+        value = text,
+        onValueChange = { input ->
+            if(input.length <= 8 && input.all { it.isDigit() }) {
+                val year = if(input.length >= 4) input.substring(0, 4).toInt()
+                else if(input.isNotEmpty()) input.toInt()
+                else 1
+
+                val month = if(input.length > 4) input.substring(4, if(input.length < 6) input.length else 6).toInt()
+                else 1
+
+                val day = if(input.length > 6) input.substring(6).toInt()
+                else 1
+
+                onDateChange(LocalDate(year, month, day))
+                text = year.toString(4) + month.toString(2) + day.toString(2)
+            }
+        },
+        visualTransformation = DateVisualTransformation()
+    )
 }

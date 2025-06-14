@@ -296,6 +296,64 @@ object Api {
                             }
                         }
                     }
+
+                }
+
+                inner class Logs {
+                    suspend fun create(log: LogCreate): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.post(baseUrl) {
+                                url {
+                                    appendPathSegments("movies", movieId.toString(), "logs")
+                                }
+                                setBody(log)
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            Result.Error(response.body<ApiErrorList>())
+                        }
+                    }
+
+                    inner class Id(
+                        val logId: Int
+                    ) {
+                        suspend fun update(log: Log): Result<Unit> {
+                            val response = httpClient().use { client ->
+                                client.patch(baseUrl) {
+                                    url {
+                                        appendPathSegments("movies", movieId.toString(), "logs", logId.toString())
+                                    }
+                                    setBody(log)
+                                }
+                            }
+
+
+                            return if(response.status.isSuccess()) {
+                                Result.Success(Unit)
+                            } else {
+                                Result.Error(response.body<ApiErrorList>())
+                            }
+                        }
+
+                        suspend fun delete(): Result<Unit> {
+                            val response = httpClient().use { client ->
+                                client.delete(baseUrl) {
+                                    url {
+                                        appendPathSegments("movies", movieId.toString(), "logs", logId.toString())
+                                    }
+                                }
+                            }
+
+                            return if(response.status.isSuccess()) {
+                                Result.Success(Unit)
+                            } else {
+                                Result.Error(response.body<ApiErrorList>())
+                            }
+                        }
+                    }
                 }
             }
         }

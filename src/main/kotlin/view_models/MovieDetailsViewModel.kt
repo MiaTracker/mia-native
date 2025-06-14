@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import data_objects.AlternativeTitle
 import data_objects.Genre
 import data_objects.GenreCreate
+import data_objects.Log
+import data_objects.LogCreate
 import data_objects.MovieDetails
 import data_objects.Result
 import data_objects.Source
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 
 sealed interface MovieDetailsUiState {
     object Loading : MovieDetailsUiState
@@ -211,5 +214,61 @@ class MovieDetailsViewModel(
 
     inner class Logs {
 
+        fun create(
+            date: LocalDate,
+            source: String,
+            stars: Float?,
+            completed: Boolean,
+            comment: String?
+        ) {
+            if(source.isBlank()) return
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = Api.instance.Movies().Id(id).Logs().create(
+                    log = LogCreate(
+                        date = date,
+                        source = source,
+                        stars = stars,
+                        completed = completed,
+                        comment = comment
+                    )
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun update(log: Log) {
+            if(log.source.isBlank()) return
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = Api.instance.Movies().Id(id).Logs().Id(log.id).update(
+                    log = log
+                )
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun delete(log: Log) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = Api.instance.Movies().Id(id).Logs().Id(log.id).delete()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
     }
 }

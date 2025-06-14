@@ -29,8 +29,14 @@ import data_objects.Source
 import enums.SourceType
 import helpers.toStarsString
 import io.ktor.http.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import view_models.MovieDetailsUiState
 import view_models.MovieDetailsViewModel
+import java.time.ZoneId
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -97,7 +103,8 @@ fun MovieDetailsView(movieId: Int, viewModel: MovieDetailsViewModel = viewModel 
                         ) {
                             Logs(
                                 logsViewModel = viewModel.Logs(),
-                                logs = details.logs
+                                logs = details.logs,
+                                sources = details.sources
                             )
                         }
                     }
@@ -321,7 +328,9 @@ fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: M
 @Composable
 fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Source>) {
 
-    Column {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -396,46 +405,110 @@ fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Sourc
             onDelete = { source ->
                 sourcesViewModel.delete(source)
             },
-            modifier = Modifier
-                .padding(vertical = 10.dp)
         )
     }
 }
 
 @Composable
-fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>) {
-    Column {
+fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: List<Source>) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .background(Color.Blue)
+                .fillMaxWidth()
         ) {
             Text(
                 text = "Logs:",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            InlineIconButton(onClick = {
+            var adding by remember { mutableStateOf(false) }
 
-            }) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+            if (adding) {
+
+                var sourceId by remember { mutableStateOf(0) }
+                var stars by remember { mutableStateOf<Float?>(null) }
+                var completed by remember { mutableStateOf(true) }
+                var comment by remember { mutableStateOf<String?>(null) }
+                var date by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.UTC).date) }
+
+                fun clear() {
+                    sourceId = 0
+                    stars = null
+                    completed = true
+                    comment = null
+                    date = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                    adding = false
+                }
+
+                fun commit() {
+                    logsViewModel.create(
+                        date = date,
+                        source = sources[sourceId].name,
+                        stars = stars,
+                        completed = completed,
+                        comment = comment
+                    )
+                    clear()
+                }
+                
+                LogTag(
+                    editable = true,
+                    sources = sources.map { it.name },
+                    sourceId = sourceId,
+                    onSourceIdChange = { sourceId = it },
+                    stars = stars,
+                    onStarsChange = { stars = it },
+                    completed = completed,
+                    onCompletedChange = { completed = it },
+                    comment = comment,
+                    onCommentChange = { comment = it },
+                    date = date,
+                    onDateChange = { date = it },
+                    sourceWidth = 100.dp,
+                    starsWidth = 100.dp,
+                    completedWidth = 100.dp,
+                    dateWidth = 100.dp,
+                    onCommit = { commit() }
+                ) {
+                    TagIcon(
+                        onClick = { clear() }
+                    ) {
+                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
+                    }
+
+                    InlineIconButton(
+                        onClick = {
+                            commit()
+                        },
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                    }
+                }
+            }
+
+            if(!adding) {
+                InlineIconButton(onClick = {
+                    if(sources.any()) adding = true
+                }) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
             }
         }
 
-//        SourcesList(
-//            sources = sources,
-//            onEdit = { source ->
-//                editedSource = EditedSource(
-//                    id = source.id,
-//                    name = source.name,
-//                    type = source.type,
-//                    url = source.url
-//                )
-//            },
-//            onDelete = { source ->
-//                sourcesViewModel.delete(source)
-//            },
-//            modifier = Modifier
-//                .padding(vertical = 10.dp)
-//        )
+        LogsList(
+            logs = logs,
+            sources = sources,
+            onUpdate = { log ->
+                logsViewModel.update(log)
+            },
+            onDelete = { log ->
+                logsViewModel.delete(log)
+            },
+        )
     }
 }

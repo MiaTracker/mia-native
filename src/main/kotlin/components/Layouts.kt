@@ -17,7 +17,8 @@ fun MediaDetailsLayout(
     poster: @Composable () -> Unit,
     rightContent: @Composable () -> Unit,
     bottomContent: @Composable () -> Unit,
-    spacing: Dp = 20.dp
+    spacing: Dp = 10.dp,
+    padding: Dp = 20.dp
 ) {
     val localDensity = LocalDensity.current
 
@@ -26,7 +27,8 @@ fun MediaDetailsLayout(
             measurables: List<Measurable>,
             constraints: Constraints
         ): MeasureResult {
-            val padding = with(localDensity) { spacing.roundToPx()}
+            val spacing = with(localDensity) { spacing.roundToPx()}
+            val padding = with(localDensity) { padding.roundToPx()}
 
             val headerPlaceable = measurables[0].measure(constraints)
             val posterPlaceable = measurables[1].measure(constraints)
@@ -36,8 +38,9 @@ fun MediaDetailsLayout(
             val posterYOffset = headerPlaceable.height / 3 * 2
             val posterBottomY = posterYOffset + posterPlaceable.height
             val rightContentOffsetX = posterPlaceable.width + 2 * padding
-            val rightContentBottomY = headerPlaceable.height + rightContentPlaceable.height
-            val bottomContentYOffset = max(posterBottomY, rightContentBottomY)
+            val rightContentOffsetY = headerPlaceable.height + spacing
+            val rightContentBottomY = rightContentOffsetY + rightContentPlaceable.height
+            val bottomContentYOffset = max(posterBottomY, rightContentBottomY) + spacing
 
             val width = max(
                 headerPlaceable.width,
@@ -47,7 +50,7 @@ fun MediaDetailsLayout(
                 )
             )
 
-            val height = bottomContentYOffset + bottomContentPlaceable.height
+            val height = bottomContentYOffset + bottomContentPlaceable.height + padding
 
             return layout(
                 width = width,
@@ -55,7 +58,7 @@ fun MediaDetailsLayout(
             ) {
                 headerPlaceable.place(0, 0)
                 posterPlaceable.place(padding, posterYOffset, 2f)
-                rightContentPlaceable.place(rightContentOffsetX, headerPlaceable.height)
+                rightContentPlaceable.place(rightContentOffsetX, rightContentOffsetY)
                 bottomContentPlaceable.place(padding, bottomContentYOffset)
             }
         }
