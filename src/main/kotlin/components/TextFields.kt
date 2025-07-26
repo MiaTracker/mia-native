@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -28,9 +29,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -38,13 +43,71 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
-import helpers.DateVisualTransformation
 import kotlinx.datetime.LocalDate
+import java.awt.TextField
+import java.time.DateTimeException
+import java.time.YearMonth
+import javax.swing.RowFilter.dateFilter
 
 @Composable
 fun InlineTextField(
     value: String,
     onValueChange: (String) -> Unit,
+    onDone: () -> Unit = {},
+    placeholder: String? = null,
+    alignment: Alignment.Horizontal = Alignment.Start,
+    readOnly: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: @Composable () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    // Holds the latest internal TextFieldValue state. We need to keep it to have the correct value
+    // of the composition.
+    var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = value)) }
+    // Holds the latest TextFieldValue that BasicTextField was recomposed with. We couldn't simply
+    // pass `TextFieldValue(text = value)` to the CoreTextField because we need to preserve the
+    // composition.
+    val textFieldValue = textFieldValueState.copy(text = value)
+
+    SideEffect {
+        if (
+            textFieldValue.selection != textFieldValueState.selection ||
+            textFieldValue.composition != textFieldValueState.composition
+        ) {
+            textFieldValueState = textFieldValue
+        }
+    }
+    // Last String value that either text field was recomposed with or updated in the onValueChange
+    // callback. We keep track of it to prevent calling onValueChange(String) for same String when
+    // CoreTextField's onValueChange is called multiple times without recomposition in between.
+    var lastTextValue by remember(value) { mutableStateOf(value) }
+
+    InlineTextField(
+        value = textFieldValue,
+        onValueChange = { newTextFieldValueState ->
+            textFieldValueState = newTextFieldValueState
+
+            val stringChangedSinceLastInvocation = lastTextValue != newTextFieldValueState.text
+            lastTextValue = newTextFieldValueState.text
+
+            if (stringChangedSinceLastInvocation) {
+                onValueChange(newTextFieldValueState.text)
+            }
+        },
+        onDone = onDone,
+        placeholder = placeholder,
+        alignment = alignment,
+        readOnly = readOnly,
+        visualTransformation = visualTransformation,
+        trailingIcon = trailingIcon,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun InlineTextField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     onDone: () -> Unit = {},
     placeholder: String? = null,
     alignment: Alignment.Horizontal = Alignment.Start,
@@ -138,7 +201,7 @@ fun InlineTextField(
                             contentAlignment = blockAlignment,
                             modifier = Modifier.weight(2f)
                         ) {
-                            if(placeholder != null && value.isEmpty()) {
+                            if(placeholder != null && value.text.isEmpty()) {
                                 Text(
                                     text = placeholder,
                                     color =
@@ -420,36 +483,205 @@ fun InlineCheckbox(
     }
 }
 
+//@Composable
+//fun InlineDateInput(
+//    date: LocalDate,
+//    onDateChange: (LocalDate) -> Unit,
+//) {
+//    var text by remember(date) {
+//        mutableStateOf(
+//            "%04d".format(date.year) + "%02d".format(date.monthNumber) + "%02d".format(date.dayOfMonth)
+//        )
+//    }
+//
+//
+//    // Holds the latest internal TextFieldValue state. We need to keep it to have the correct value
+//    // of the composition.
+//    var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = text)) }
+//    // Holds the latest TextFieldValue that BasicTextField was recomposed with. We couldn't simply
+//    // pass `TextFieldValue(text = value)` to the CoreTextField because we need to preserve the
+//    // composition.
+//    val textFieldValue = textFieldValueState.copy(text = text)
+//
+//    SideEffect {
+//        if (
+//            textFieldValue.selection != textFieldValueState.selection ||
+//            textFieldValue.composition != textFieldValueState.composition
+//        ) {
+//            textFieldValueState = textFieldValue
+//        }
+//    }
+//    // Last String value that either text field was recomposed with or updated in the onValueChange
+//    // callback. We keep track of it to prevent calling onValueChange(String) for same String when
+//    // CoreTextField's onValueChange is called multiple times without recomposition in between.
+//    var lastTextValue by remember(text) { mutableStateOf(text) }
+//
+//    InlineTextField(
+//        value = textFieldValue,
+//        onValueChange = { newTextFieldValueState ->
+//
+//            println(
+//                "(${newTextFieldValueState.selection.start} - ${newTextFieldValueState.selection.end})"
+//            )
+//
+//            val stringChangedSinceLastInvocation = lastTextValue != newTextFieldValueState.text
+//
+//            if (stringChangedSinceLastInvocation) {
+//                if(newTextFieldValueState.text.all { it.isDigit() }) {
+//
+//                    var output = lastTextValue
+//
+//                    if(!textFieldValueState.selection.collapsed) {
+//                        val selection = textFieldValueState.selection
+//
+//                        output = output.replaceRange(selection.start, selection.end, "0".repeat(selection.length))
+//                    }
+//
+//                    if(newTextFieldValueState.text.length > lastTextValue.length) {
+//                        val addedCount = newTextFieldValueState.text.length - lastTextValue.length
+//
+//                        output = output.replaceRange(newTextFieldValueState.selection.start - addedCount,
+//                            newTextFieldValueState.selection.start,
+//                            newTextFieldValueState.text.substring(
+//                                newTextFieldValueState.selection.start - addedCount, newTextFieldValueState.selection.start
+//                            ))
+//
+////                        input[newTextFieldValueState.]
+//                    }
+//                    else if(newTextFieldValueState.text.length < lastTextValue.length) {
+//                        val deletedCount = lastTextValue.length - newTextFieldValueState.text.length
+//                        output = output.replaceRange(newTextFieldValueState.selection.start,
+//                            newTextFieldValueState.selection.start + deletedCount,
+//                            "0".repeat(deletedCount))
+//                    }
+//
+//
+//                    val year = (
+//                            if(output.length >= 4) output.substring(0, 4).toInt()
+//                            else if(output.isNotEmpty()) output.toInt()
+//                            else 1
+//                            ).coerceIn(1, 9999)
+//
+//                    val month = (
+//                            if(output.length > 4) output.substring(4, if(output.length < 6) output.length else 6).toInt()
+//                            else 1
+//                            ).coerceIn(1, 12)
+//
+//                    val day = (
+//                            if(output.length > 6) output.substring(6).toInt()
+//                            else 1
+//                            ).coerceIn(1, YearMonth.of(year, month).lengthOfMonth())
+//
+//                    try {
+//                        val date = LocalDate(year, month, day)
+//                        onDateChange(date)
+//                    } catch (_: DateTimeException) {}
+//
+//
+//                    textFieldValueState = newTextFieldValueState.copy(text = output)
+//                }
+//                else {
+//                    textFieldValueState = newTextFieldValueState
+//                }
+//            }
+//            else {
+//                textFieldValueState = newTextFieldValueState
+//            }
+//
+//            lastTextValue = newTextFieldValueState.text
+//        },
+//        visualTransformation = DateVisualTransformation()
+//    )
+//}
+
 @Composable
 fun InlineDateInput(
     date: LocalDate,
     onDateChange: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    fun dateFilter(text: AnnotatedString): TransformedText {
 
-    var text by remember {
+        val trimmed = if (text.text.length >= 8) text.text.substring(0..7) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            if(i == 4 || i == 6) out += "-"
+            out += trimmed[i]
+        }
+
+        val numberOffsetTranslator = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int =
+                when(offset) {
+                    0 -> 0
+                    1 -> 1
+                    2 -> 2
+                    3 -> 3
+                    4 -> 4
+                    5 -> 6
+                    6 -> 7
+                    7 -> 9
+                    8 -> 10
+                    else -> throw NotImplementedError()
+                }
+
+            override fun transformedToOriginal(offset: Int): Int =
+                when(offset) {
+                    10 -> 8
+                    9 -> 7
+                    8 -> 6
+                    7 -> 6
+                    6 -> 5
+                    5 -> 4
+                    4 -> 4
+                    3 -> 3
+                    2 -> 2
+                    1 -> 1
+                    0 -> 0
+                    else -> throw NotImplementedError()
+                }
+        }
+
+        return TransformedText(AnnotatedString(out), numberOffsetTranslator)
+    }
+
+    class DateTransformation() : VisualTransformation {
+        override fun filter(text: AnnotatedString): TransformedText {
+            return dateFilter(text)
+        }
+    }
+
+
+    var text by remember(date) {
         mutableStateOf(
-            date.year.toString(4) + date.monthNumber.toString(2) + date.dayOfMonth.toString(2)
+            "%04d".format(date.year) + "%02d".format(date.monthNumber) + "%02d".format(date.dayOfMonth)
         )
     }
 
     InlineTextField(
         value = text,
-        onValueChange = { input ->
-            if(input.length <= 8 && input.all { it.isDigit() }) {
-                val year = if(input.length >= 4) input.substring(0, 4).toInt()
-                else if(input.isNotEmpty()) input.toInt()
-                else 1
+        onValueChange = {
+            if(it.length <= 8) {
+                text = it
 
-                val month = if(input.length > 4) input.substring(4, if(input.length < 6) input.length else 6).toInt()
-                else 1
+                if(text.length == 8)
+                {
+                    val year = text.substring(0, 4).toInt()
+                    val month = text.substring(4, 6).toInt()
+                    val day = text.substring(6).toInt()
 
-                val day = if(input.length > 6) input.substring(6).toInt()
-                else 1
+                    if(
+                        year >= 1 && year <= 9999
+                        && month >= 1 && month <= 12
+                        && day >= 1 && day <= YearMonth.of(year, month).lengthOfMonth()
+                        ) {
 
-                onDateChange(LocalDate(year, month, day))
-                text = year.toString(4) + month.toString(2) + day.toString(2)
+                        val date = LocalDate(year, month, day)
+                        onDateChange(date)
+                    }
+                }
             }
         },
-        visualTransformation = DateVisualTransformation()
+        visualTransformation = DateTransformation(),
+        modifier = modifier
     )
 }

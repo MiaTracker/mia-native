@@ -7,9 +7,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DisplayMode
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -409,6 +413,7 @@ fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Sourc
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: List<Source>) {
     Column(

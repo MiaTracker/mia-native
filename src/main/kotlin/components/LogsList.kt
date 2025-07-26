@@ -253,6 +253,7 @@ fun LogTag(
                 onValueChange = onCommentChange,
                 readOnly = !editable,
                 alignment = Alignment.CenterHorizontally,
+                placeholder = "Comment",
                 modifier = Modifier
                     .weight(2f)
             )
@@ -260,18 +261,9 @@ fun LogTag(
             InlineDateInput(
                 date = date,
                 onDateChange = onDateChange,
-            );
-
-            InlineTextField(
-                value = date.toString(),
-                onValueChange = { onDateChange(date) },
-                readOnly = !editable,
-                alignment = Alignment.CenterHorizontally,
-                placeholder = "Date",
                 modifier = Modifier
-                    .fillMaxHeight()
                     .width(dateWidth)
-            )
+            );
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
