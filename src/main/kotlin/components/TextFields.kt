@@ -598,6 +598,8 @@ fun InlineCheckbox(
 fun InlineDateInput(
     date: LocalDate,
     onDateChange: (LocalDate) -> Unit,
+    readOnly: Boolean = false,
+    onDone: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     fun dateFilter(text: AnnotatedString): TransformedText {
@@ -681,6 +683,8 @@ fun InlineDateInput(
                 }
             }
         },
+        readOnly = readOnly,
+        onDone = onDone,
         visualTransformation = DateTransformation(),
         modifier = modifier
     )

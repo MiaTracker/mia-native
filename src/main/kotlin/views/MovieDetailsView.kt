@@ -423,7 +423,6 @@ fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: Li
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
-                .background(Color.Blue)
                 .fillMaxWidth()
         ) {
             Text(
@@ -474,9 +473,7 @@ fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: Li
                     onCommentChange = { comment = it },
                     date = date,
                     onDateChange = { date = it },
-                    sourceWidth = 100.dp,
                     starsWidth = 100.dp,
-                    completedWidth = 100.dp,
                     dateWidth = 100.dp,
                     onCommit = { commit() }
                 ) {

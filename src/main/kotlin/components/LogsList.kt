@@ -67,18 +67,15 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
                 SourceLabel(
                     text = starsLabel,
                     modifier = Modifier
-//                        .width(typeWidth)
                 )
 
                 SourceLabel(
                     text = sourceLabel,
                     modifier = Modifier
-//                        .width(nameWidth)
                 )
                 SourceLabel(
                     text = completedLabel,
                     modifier = Modifier
-//                        .width(typeWidth)
                 )
 
                 SourceLabel(
@@ -90,7 +87,6 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
                 SourceLabel(
                     text = dateLabel,
                     modifier = Modifier
-//                        .width(typeWidth)
                 )
 
                 Spacer(
@@ -103,11 +99,11 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
         for (log in logs) {
             var editable by remember { mutableStateOf(false) }
 
-            var sourceId by remember { mutableStateOf(sourceNames.indexOf(log.source)) }
-            var stars by remember { mutableStateOf(log.stars) }
-            var completed by remember { mutableStateOf(log.completed) }
-            var comment by remember { mutableStateOf(log.comment) }
-            var date by remember { mutableStateOf(log.date) }
+            var sourceId by remember(log) { mutableStateOf(sourceNames.indexOf(log.source)) }
+            var stars by remember(log) { mutableStateOf(log.stars) }
+            var completed by remember(log) { mutableStateOf(log.completed) }
+            var comment by remember(log) { mutableStateOf(log.comment) }
+            var date by remember(log) { mutableStateOf(log.date) }
 
             fun clear() {
                 sourceId = sourceNames.indexOf(log.source)
@@ -137,9 +133,7 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
                 onCommentChange = { comment = it },
                 date = date,
                 onDateChange = { date = it },
-                sourceWidth = 50.dp,
                 starsWidth = 50.dp,
-                completedWidth = 50.dp,
                 dateWidth = 100.dp,
                 onCommit = { commit() }
             ) {
@@ -190,9 +184,7 @@ fun LogTag(
     onCommentChange: (String?) -> Unit,
     date: LocalDate,
     onDateChange: (LocalDate) -> Unit,
-    sourceWidth: Dp,
     starsWidth: Dp,
-    completedWidth: Dp,
     dateWidth: Dp,
     onCommit: () -> Unit,
     actions: @Composable RowScope.() -> Unit
@@ -238,7 +230,7 @@ fun LogTag(
                 options = sources,
                 selectedIdx = sourceId,
                 onSelectedIdxChanged = onSourceIdChange,
-                readOnly = !editable
+                readOnly = !editable,
             )
 
             InlineCheckbox(
@@ -261,6 +253,8 @@ fun LogTag(
             InlineDateInput(
                 date = date,
                 onDateChange = onDateChange,
+                readOnly = !editable,
+                onDone = onCommit,
                 modifier = Modifier
                     .width(dateWidth)
             );
