@@ -1,5 +1,6 @@
 package views
 
+import InnerNavigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,10 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -36,75 +35,89 @@ import view_models.MovieDetailsViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MovieDetailsView(movieId: Int, viewModel: MovieDetailsViewModel = viewModel { MovieDetailsViewModel(movieId) } ) {
+fun MovieDetailsView(
+    movieId: Int,
+    navController: NavHostController,
+    drawerState: DrawerState,
+    viewModel: MovieDetailsViewModel = viewModel { MovieDetailsViewModel(movieId) }
+) {
     val uiState by viewModel.uiState.collectAsState()
 
-    when (val state = uiState) {
-        is MovieDetailsUiState.Loading -> Text("Loading...")
-        is MovieDetailsUiState.Loaded -> {
 
-        val details = state.movieDetails
+    InnerNavigation(
+        navController = navController,
+        drawerState = drawerState,
+        title = {
+            val s = uiState
+            if(s is MovieDetailsUiState.Loaded) Text(text = s.movieDetails.title)
+        }
+    ) {
+        when (val state = uiState) {
+            is MovieDetailsUiState.Loading -> Text("Loading...")
+            is MovieDetailsUiState.Loaded -> {
+                val details = state.movieDetails
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .wrapContentHeight(),
-            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .wrapContentHeight(),
+                ) {
 
-                MediaDetailsLayout(
-                    header = {
-                        Column(
-                            modifier = Modifier
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth()
+                    MediaDetailsLayout(
+                        header = {
+                            Column(
+                                modifier = Modifier
                             ) {
-                                Backdrop(details.backdropPath)
-                                TitlePanel(
-                                    details = details,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter),
+                                Box(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Backdrop(details.backdropPath)
+                                    TitlePanel(
+                                        details = details,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter),
+                                    )
+                                }
+                            }
+                        },
+                        poster = {
+                            Poster(details.posterPath)
+                        },
+                        rightContent = {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier
+                            ) {
+
+                                TagRows(
+                                    viewModel = viewModel,
+                                    details = details
+                                )
+
+                                details.overview?.let { overview ->
+                                    Text(
+                                        text = details.overview
+                                    )
+                                }
+
+                                Sources(viewModel.Sources(), details.sources)
+                            }
+                        },
+                        bottomContent = {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            ) {
+                                Logs(
+                                    logsViewModel = viewModel.Logs(),
+                                    logs = details.logs,
+                                    sources = details.sources
                                 )
                             }
                         }
-                    },
-                    poster = {
-                        Poster(details.posterPath)
-                    },
-                    rightContent = {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier
-                        ) {
-
-                            TagRows(
-                                viewModel = viewModel,
-                                details = details
-                            )
-
-                            details.overview?.let { overview ->
-                                Text(
-                                    text = details.overview
-                                )
-                            }
-
-                            Sources(viewModel.Sources(), details.sources)
-                        }
-                    },
-                    bottomContent = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                        ) {
-                            Logs(
-                                logsViewModel = viewModel.Logs(),
-                                logs = details.logs,
-                                sources = details.sources
-                            )
-                        }
-                    }
-                )
+                    )
+                }
             }
         }
     }

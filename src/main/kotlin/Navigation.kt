@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import components.TopBar
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import views.InstanceSelectionView
@@ -67,22 +68,16 @@ fun RootNavigation() {
         }
         navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
             composable<Navigation.Inner.MoviesIndex> {
-                InnerNavigation(
-                    navController = navController,
-                    drawerState = drawerState
-                ) {
-                    MoviesIndexView(navController)
-                }
+                MoviesIndexView(navController = navController, drawerState = drawerState)
             }
             composable<Navigation.Inner.MovieDetails> { backStackEntry ->
                 val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
 
-                InnerNavigation(
+                MovieDetailsView(
+                    movieDetails.movieId,
                     navController = navController,
-                    drawerState = drawerState
-                ) {
-                    MovieDetailsView(movieDetails.movieId)
-                }
+                    drawerState = drawerState,
+                )
             }
         }
     }
@@ -93,6 +88,8 @@ fun RootNavigation() {
 fun InnerNavigation(
     navController: NavHostController,
     drawerState: DrawerState,
+    title: @Composable () -> Unit,
+    searchbar: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -104,16 +101,17 @@ fun InnerNavigation(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        TopAppBar(
-            title = { Text("Movies") },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        TopBar(
             navigationIcon = {
                 if (isOnRoot) {
                     IconButton(
                         onClick = {
                             scope.launch {
-                                if(drawerState.isOpen) { drawerState.close() }
-                                else { drawerState.open() }
+                                if (drawerState.isOpen) {
+                                    drawerState.close()
+                                } else {
+                                    drawerState.open()
+                                }
                             }
                         },
                         modifier = Modifier
@@ -121,10 +119,9 @@ fun InnerNavigation(
                     ) {
                         Icon(Icons.Filled.Menu, contentDescription = null)
                     }
-                }
-                else {
+                } else {
                     IconButton(
-                        onClick = {navController.navigateUp()},
+                        onClick = { navController.navigateUp() },
                         modifier = Modifier
                             .pointerHoverIcon(PointerIcon.Hand)
                     ) {
@@ -132,7 +129,10 @@ fun InnerNavigation(
                     }
                 }
             },
+            title = title,
+            searchbar = searchbar,
         )
+
         ModalNavigationDrawer(
             gesturesEnabled = isOnRoot,
             drawerContent = {

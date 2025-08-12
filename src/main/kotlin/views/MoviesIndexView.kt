@@ -1,13 +1,16 @@
 package views
 
+import InnerNavigation
+import Navigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
 import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -21,10 +24,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import components.SearchBar
 import data_objects.MediaIndex
 import helpers.toStarsString
 import io.ktor.http.*
@@ -33,25 +37,43 @@ import view_models.MoviesIndexViewModel
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MoviesIndexView(navController: NavController, viewModel: MoviesIndexViewModel = viewModel { MoviesIndexViewModel() }) {
+fun MoviesIndexView(
+    navController: NavHostController,
+    drawerState: DrawerState,
+    viewModel: MoviesIndexViewModel = viewModel { MoviesIndexViewModel() }
+) {
     val uiState by viewModel.uiState.collectAsState()
 
-    when (val state = uiState) {
-        is MainUiState.Loading -> { Text("loading") }
-        is MainUiState.Loaded -> {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize().padding(10.dp)
-            ) {
-                state.media.forEach { media ->
-                    MediaIndexView(
-                        media = media,
-                        modifier = Modifier
-                            .onClick {
-                                navController.navigate(Navigation.Inner.MovieDetails(media.id))
-                            }
-                    )
+    var str by remember { mutableStateOf("") }
+
+    InnerNavigation(
+        navController = navController,
+        drawerState = drawerState,
+        title = { Text(text = "Movies") },
+        searchbar = {
+            SearchBar(
+                searchQuery = str,
+                onSearchQueryChange = { str = it },
+            )
+        }
+    ) {
+        when (val state = uiState) {
+            is MainUiState.Loading -> { Text("loading") }
+            is MainUiState.Loaded -> {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize().padding(10.dp)
+                ) {
+                    state.media.forEach { media ->
+                        MediaIndexView(
+                            media = media,
+                            modifier = Modifier
+                                .onClick {
+                                    navController.navigate(Navigation.Inner.MovieDetails(media.id))
+                                }
+                        )
+                    }
                 }
             }
         }
