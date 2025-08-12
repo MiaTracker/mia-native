@@ -59,7 +59,7 @@ object Api {
         }
 
         inner class Movies {
-            suspend fun index(offset: Int? = null, limit: Int? = null): Result<List<MediaIndex>> {
+            suspend fun index(offset: Int? = null, limit: Int? = null): Result<List<InternalMediaIndex>> {
                 val response = httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
@@ -75,7 +75,54 @@ object Api {
                 }
 
                 return if(response.status.isSuccess()) {
-                    Result.Success(response.body<List<MediaIndex>>())
+                    Result.Success(response.body<List<InternalMediaIndex>>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun search(query: String, committed: Boolean, offset: Int? = null, limit: Int? = null): Result<SearchResults> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments("movies")
+                            appendPathSegments("search")
+                            parameters.append("committed", committed.toString())
+                            if (offset != null) {
+                                parameters.append("offset", offset.toString())
+                            }
+                            if (limit != null) {
+                                parameters.append("limit", limit.toString())
+                            }
+                        }
+
+                        setBody(
+                            SearchRequest(
+                                query = query,
+                            )
+                        )
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<SearchResults>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun create(externalId: Int): Result<Int> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments("movies")
+                            parameters.append("tmdb_id", externalId.toString())
+                        }
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<Int>())
                 } else {
                     Result.Error(response.body<ApiErrorList>())
                 }

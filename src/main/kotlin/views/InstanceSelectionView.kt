@@ -77,7 +77,10 @@ fun InstanceSelectionView(
                     enabled = !state.connecting,
                     singleLine = true,
                     keyboardActions = KeyboardActions(
-                        onDone = { viewModel.connect() }
+                        onDone = { viewModel.connect() },
+                        onGo = { viewModel.connect() },
+                        onSend = { viewModel.connect() },
+                        onSearch = { viewModel.connect() },
                     ),
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Home, contentDescription = null)

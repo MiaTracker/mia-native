@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -102,8 +103,10 @@ fun TopBar(
 fun SearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    onCommit: () -> Unit,
+    queryValid: Boolean
 ) = Surface(
-    color = MaterialTheme.colorScheme.inversePrimary,
+    color = if(queryValid) MaterialTheme.colorScheme.inversePrimary else MaterialTheme.colorScheme.errorContainer,
     modifier = Modifier
         .fillMaxWidth()
         .fillMaxHeight()
@@ -115,6 +118,12 @@ fun SearchBar(
         onValueChange = onSearchQueryChange,
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimaryContainer),
+        maxLines = 1,
+        keyboardActions = KeyboardActions(
+            onSearch = { onCommit() },
+            onDone = { onCommit() },
+            onGo = { onCommit() }
+        ),
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier.fillMaxHeight()
