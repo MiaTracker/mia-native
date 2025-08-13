@@ -37,7 +37,10 @@ fun TopBar(
             navigationIcon()
         }
 
-        Box {
+        Box(
+            Modifier
+                .padding(start = 10.dp)
+        ) {
             val mergedStyle = LocalTextStyle.current.merge(MaterialTheme.typography.titleLarge)
 
             CompositionLocalProvider(
@@ -55,6 +58,7 @@ fun TopBar(
         .background(MaterialTheme.colorScheme.primaryContainer)
         .fillMaxWidth()
         .height(IntrinsicSize.Min)
+        .padding(5.dp)
 ) { measurables, constraints ->
 
 
@@ -110,7 +114,7 @@ fun SearchBar(
     modifier = Modifier
         .fillMaxWidth()
         .fillMaxHeight()
-        .padding(5.dp)
+        .padding(2.dp)
 ) {
 
     BasicTextField(

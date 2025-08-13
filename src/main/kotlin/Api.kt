@@ -1,14 +1,14 @@
 import data_objects.*
-import data_objects.MovieDetails
 import io.ktor.client.*
-import io.ktor.client.call.body
+import io.ktor.client.call.*
 import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.reflect.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
@@ -58,12 +58,56 @@ object Api {
             } catch(_: Exception) { return false }
         }
 
-        inner class Movies {
+        inner class Users {
+            suspend fun login(request: LoginRequest): Result<LoginResult> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments("users", "login")
+                        }
+                        setBody(request)
+                    }
+                }
+
+                val body = response.bodyAsText()
+                println(body)
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<LoginResult>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+        }
+
+        inner class Media : BaseMediaApi() {
+            override val subpath: String
+                get() = "media"
+        }
+
+        inner class Movies : BaseMediaInstanceApi<MovieDetails>() {
+            override val subpath: String
+                get() = "movies"
+
+            override val type: TypeInfo
+                get() = TypeInfo(MovieDetails::class)
+        }
+
+        inner class Series : BaseMediaInstanceApi<SeriesDetails>() {
+            override val subpath: String
+                get() = "series"
+
+            override val type: TypeInfo
+                get() = TypeInfo(SeriesDetails::class)
+        }
+
+        abstract inner class BaseMediaApi {
+            protected abstract val subpath: String
+
             suspend fun index(offset: Int? = null, limit: Int? = null): Result<List<InternalMediaIndex>> {
                 val response = httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
-                            appendPathSegments("movies")
+                            appendPathSegments(subpath)
                             if (offset != null) {
                                 parameters.append("offset", offset.toString())
                             }
@@ -74,18 +118,23 @@ object Api {
                     }
                 }
 
-                return if(response.status.isSuccess()) {
+                return if (response.status.isSuccess()) {
                     Result.Success(response.body<List<InternalMediaIndex>>())
                 } else {
                     Result.Error(response.body<ApiErrorList>())
                 }
             }
 
-            suspend fun search(query: String, committed: Boolean, offset: Int? = null, limit: Int? = null): Result<SearchResults> {
+            suspend fun search(
+                query: String,
+                committed: Boolean,
+                offset: Int? = null,
+                limit: Int? = null
+            ): Result<SearchResults> {
                 val response = httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
-                            appendPathSegments("movies")
+                            appendPathSegments(subpath)
                             appendPathSegments("search")
                             parameters.append("committed", committed.toString())
                             if (offset != null) {
@@ -104,24 +153,28 @@ object Api {
                     }
                 }
 
-                return if(response.status.isSuccess()) {
+                return if (response.status.isSuccess()) {
                     Result.Success(response.body<SearchResults>())
                 } else {
                     Result.Error(response.body<ApiErrorList>())
                 }
             }
+        }
+
+        abstract inner class BaseMediaInstanceApi<T: MediaDetails> : BaseMediaApi() {
+            protected abstract val type: TypeInfo
 
             suspend fun create(externalId: Int): Result<Int> {
                 val response = httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
-                            appendPathSegments("movies")
+                            appendPathSegments(subpath)
                             parameters.append("tmdb_id", externalId.toString())
                         }
                     }
                 }
 
-                return if(response.status.isSuccess()) {
+                return if (response.status.isSuccess()) {
                     Result.Success(response.body<Int>())
                 } else {
                     Result.Error(response.body<ApiErrorList>())
@@ -129,19 +182,19 @@ object Api {
             }
 
             inner class Id(
-                private val movieId: Int
+                private val mediaId: Int
             ) {
-                suspend fun get(): Result<MovieDetails> {
+                suspend fun get(): Result<T> {
                     val response = httpClient().use { client ->
                         client.get(baseUrl) {
                             url {
-                                appendPathSegments("movies", movieId.toString())
+                                appendPathSegments(subpath, mediaId.toString())
                             }
                         }
                     }
 
                     return if(response.status.isSuccess()) {
-                        Result.Success(response.body<MovieDetails>())
+                        Result.Success(response.body(type))
                     } else {
                         Result.Error(response.body<ApiErrorList>())
                     }
@@ -153,7 +206,7 @@ object Api {
                         val response = httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
-                                    appendPathSegments("movies", movieId.toString(), "titles")
+                                    appendPathSegments(subpath, mediaId.toString(), "titles")
                                 }
                                 setBody(title)
                             }
@@ -174,7 +227,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.post(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "titles", titleId.toString(), "primary")
+                                        appendPathSegments(subpath, mediaId.toString(), "titles", titleId.toString(), "primary")
                                     }
                                 }
                             }
@@ -190,7 +243,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "titles", titleId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "titles", titleId.toString())
                                     }
                                 }
                             }
@@ -210,7 +263,7 @@ object Api {
                         val response = httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
-                                    appendPathSegments("movies", movieId.toString(), "genres")
+                                    appendPathSegments(subpath, mediaId.toString(), "genres")
                                 }
                                 setBody(genre)
                             }
@@ -231,7 +284,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "genres", genreId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "genres", genreId.toString())
                                     }
                                 }
                             }
@@ -252,7 +305,7 @@ object Api {
                         val response = httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
-                                    appendPathSegments("movies", movieId.toString(), "tags")
+                                    appendPathSegments(subpath, mediaId.toString(), "tags")
                                 }
                                 setBody(tag)
                             }
@@ -273,7 +326,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "tags", tagId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "tags", tagId.toString())
                                     }
                                 }
                             }
@@ -292,7 +345,7 @@ object Api {
                         val response = httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
-                                    appendPathSegments("movies", movieId.toString(), "sources")
+                                    appendPathSegments(subpath, mediaId.toString(), "sources")
                                 }
                                 setBody(source)
                             }
@@ -313,7 +366,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.patch(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "sources", sourceId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "sources", sourceId.toString())
                                     }
                                     setBody(source)
                                 }
@@ -331,7 +384,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "sources", sourceId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "sources", sourceId.toString())
                                     }
                                 }
                             }
@@ -351,7 +404,7 @@ object Api {
                         val response = httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
-                                    appendPathSegments("movies", movieId.toString(), "logs")
+                                    appendPathSegments(subpath, mediaId.toString(), "logs")
                                 }
                                 setBody(log)
                             }
@@ -371,7 +424,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.patch(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "logs", logId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "logs", logId.toString())
                                     }
                                     setBody(log)
                                 }
@@ -389,7 +442,7 @@ object Api {
                             val response = httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
-                                        appendPathSegments("movies", movieId.toString(), "logs", logId.toString())
+                                        appendPathSegments(subpath, mediaId.toString(), "logs", logId.toString())
                                     }
                                 }
                             }
@@ -401,27 +454,6 @@ object Api {
                             }
                         }
                     }
-                }
-            }
-        }
-
-        inner class Users {
-            suspend fun login(request: LoginRequest): Result<LoginResult> {
-                val response = httpClient().use { client ->
-                    client.post(baseUrl) {
-                        url {
-                            appendPathSegments("users", "login")
-                        }
-                        setBody(request)
-                    }
-                }
-
-                val body = response.bodyAsText()
-                println(body)
-                return if(response.status.isSuccess()) {
-                    Result.Success(response.body<LoginResult>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
                 }
             }
         }

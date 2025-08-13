@@ -1,127 +1,30 @@
-package views
+package components
 
-import InnerNavigation
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
-import components.*
-import data_objects.Log
-import data_objects.MovieDetails
-import data_objects.Source
+import data_objects.*
 import enums.SourceType
 import helpers.toStarsString
 import io.ktor.http.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import view_models.MovieDetailsUiState
-import view_models.MovieDetailsViewModel
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun MovieDetailsView(
-    movieId: Int,
-    navController: NavHostController,
-    drawerState: DrawerState,
-    viewModel: MovieDetailsViewModel = viewModel { MovieDetailsViewModel(movieId) }
-) {
-    val uiState by viewModel.uiState.collectAsState()
-
-
-    InnerNavigation(
-        navController = navController,
-        drawerState = drawerState,
-        title = {
-            val s = uiState
-            if(s is MovieDetailsUiState.Loaded) Text(text = s.movieDetails.title)
-        }
-    ) {
-        when (val state = uiState) {
-            is MovieDetailsUiState.Loading -> Text("Loading...")
-            is MovieDetailsUiState.Loaded -> {
-                val details = state.movieDetails
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .wrapContentHeight(),
-                ) {
-
-                    MediaDetailsLayout(
-                        header = {
-                            Column(
-                                modifier = Modifier
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Backdrop(details.backdropPath)
-                                    TitlePanel(
-                                        details = details,
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter),
-                                    )
-                                }
-                            }
-                        },
-                        poster = {
-                            Poster(details.posterPath)
-                        },
-                        rightContent = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier
-                            ) {
-
-                                TagRows(
-                                    viewModel = viewModel,
-                                    details = details
-                                )
-
-                                details.overview?.let { overview ->
-                                    Text(
-                                        text = details.overview
-                                    )
-                                }
-
-                                Sources(viewModel.Sources(), details.sources)
-                            }
-                        },
-                        bottomContent = {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                            ) {
-                                Logs(
-                                    logsViewModel = viewModel.Logs(),
-                                    logs = details.logs,
-                                    sources = details.sources
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
+import view_models.MediaDetailsViewModel
 
 @Composable
 fun Backdrop(backdropPath: String?) {
@@ -170,7 +73,7 @@ fun Poster(posterPath: String?) {
 }
 
 @Composable
-fun TitlePanel(details: MovieDetails, modifier: Modifier = Modifier) {
+fun TitlePanel(details: MediaDetails, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxWidth()
             .background(Color.Black.copy(alpha = 0.8f))
@@ -197,34 +100,7 @@ fun TitlePanel(details: MovieDetails, modifier: Modifier = Modifier) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if(details.status != null) {
-                        Text(
-                            text = details.status,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                        )
-                    }
-                    Text(
-                        text = details.releaseDate.year.toString(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White,
-                    )
-                    if(details.originalLanguage != null) {
-                        Text(
-                            text = details.originalLanguage.englishName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                        )
-                    }
-                    if(details.runtime != null) {
-                        val runtimeDisplay = "${details.runtime / 60}h ${details.runtime % 60}m"
-
-                        Text(
-                            text = runtimeDisplay,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                        )
-                    }
+                    TitlePanelInfo(details)
                 }
 
                 Row(
@@ -259,7 +135,63 @@ fun TitlePanel(details: MovieDetails, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: Modifier = Modifier) {
+fun TitlePanelInfo(details: MediaDetails) {
+    details.status?.let { status ->
+        Text(
+            text = status
+        )
+    }
+
+    when(details) {
+        is MovieDetails -> details.releaseDate?.let { releaseDate ->
+            Text(
+                text = releaseDate.year.toString(),
+                style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+            )
+        }
+        is SeriesDetails -> details.firstAirDate?.let { firstAirDate ->
+            Text(
+                text = firstAirDate.year.toString(),
+                style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+            )
+        }
+    }
+
+    details.originalLanguage?.let { originalLanguage ->
+        Text(
+            text = originalLanguage.englishName,
+            style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+        )
+    }
+
+    when(details) {
+        is MovieDetails -> details.runtime?.let { runtime ->
+            val runtimeDisplay = "${runtime / 60}h ${runtime % 60}m"
+
+            Text(
+                text = runtimeDisplay,
+                style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+            )
+        }
+        is SeriesDetails -> {
+            details.numberOfSeasons?.let { numberOfSeasons ->
+                Text(
+                    text = "$numberOfSeasons seasons",
+                    style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+                )
+            }
+            details.numberOfEpisodes?.let { numberOfEpisodes ->
+                Text(
+                    text = "$numberOfEpisodes episodes",
+                    style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier: Modifier = Modifier) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -335,7 +267,7 @@ fun TagRows(viewModel: MovieDetailsViewModel, details: MovieDetails, modifier: M
 }
 
 @Composable
-fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Source>) {
+fun Sources(sourcesViewModel: MediaDetailsViewModel<*>.Sources, sources: List<Source>) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -420,7 +352,7 @@ fun Sources(sourcesViewModel: MovieDetailsViewModel.Sources, sources: List<Sourc
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: List<Source>) {
+fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources: List<Source>) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -464,7 +396,7 @@ fun Logs(logsViewModel: MovieDetailsViewModel.Logs, logs: List<Log>, sources: Li
                     )
                     clear()
                 }
-                
+
                 LogTag(
                     editable = true,
                     sources = sources.map { it.name },

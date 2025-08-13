@@ -7,8 +7,10 @@ import data_objects.Genre
 import data_objects.GenreCreate
 import data_objects.Log
 import data_objects.LogCreate
+import data_objects.MediaDetails
 import data_objects.MovieDetails
 import data_objects.Result
+import data_objects.SeriesDetails
 import data_objects.Source
 import data_objects.SourceCreate
 import data_objects.Tag
@@ -22,18 +24,69 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
-sealed interface MovieDetailsUiState {
-    object Loading : MovieDetailsUiState
-    data class Loaded(
-        val movieDetails: MovieDetails,
-    ) : MovieDetailsUiState
+sealed interface MediaDetailsUiState<T: MediaDetails> {
+    class Loading<T: MediaDetails> : MediaDetailsUiState<T>
+    data class Loaded<T: MediaDetails>(
+        val mediaDetails: T,
+    ) : MediaDetailsUiState<T>
 }
 
-class MovieDetailsViewModel(
-    private val id: Int
+sealed interface MediaDetailsAdapter<T: MediaDetails> {
+    suspend fun get(): Result<T>
+    suspend fun createTitle(title: TitleCreate): Result<Unit>
+    suspend fun setPrimaryTitle(titleId: Int): Result<Unit>
+    suspend fun deleteTitle(titleId: Int): Result<Unit>
+    suspend fun createGenre(genre: GenreCreate): Result<Unit>
+    suspend fun deleteGenre(genreId: Int): Result<Unit>
+    suspend fun createTag(tag: TagCreate): Result<Unit>
+    suspend fun deleteTag(tagId: Int): Result<Unit>
+    suspend fun createSource(source: SourceCreate): Result<Unit>
+    suspend fun updateSource(source: Source): Result<Unit>
+    suspend fun deleteSource(sourceId: Int): Result<Unit>
+    suspend fun createLog(log: LogCreate): Result<Unit>
+    suspend fun updateLog(log: Log): Result<Unit>
+    suspend fun deleteLog(logId: Int): Result<Unit>
+
+    class MovieDetailsAdapter(private val id: Int) : MediaDetailsAdapter<MovieDetails> {
+        override suspend fun get() = Api.instance.Movies().Id(id).get()
+        override suspend fun createTitle(title: TitleCreate) = Api.instance.Movies().Id(id).Titles().create(title)
+        override suspend fun setPrimaryTitle(titleId: Int) = Api.instance.Movies().Id(id).Titles().Id(titleId).primary()
+        override suspend fun deleteTitle(titleId: Int) = Api.instance.Movies().Id(id).Titles().Id(titleId).delete()
+        override suspend fun createGenre(genre: GenreCreate) = Api.instance.Movies().Id(id).Genres().create(genre)
+        override suspend fun deleteGenre(genreId: Int) = Api.instance.Movies().Id(id).Genres().Id(genreId).delete()
+        override suspend fun createTag(tag: TagCreate) = Api.instance.Movies().Id(id).Tags().create(tag)
+        override suspend fun deleteTag(tagId: Int) = Api.instance.Movies().Id(id).Tags().Id(tagId).delete()
+        override suspend fun createSource(source: SourceCreate) = Api.instance.Movies().Id(id).Sources().create(source)
+        override suspend fun updateSource(source: Source) = Api.instance.Movies().Id(id).Sources().Id(source.id).update(source)
+        override suspend fun deleteSource(sourceId: Int) = Api.instance.Movies().Id(id).Sources().Id(sourceId).delete()
+        override suspend fun createLog(log: LogCreate) = Api.instance.Movies().Id(id).Logs().create(log)
+        override suspend fun updateLog(log: Log) = Api.instance.Movies().Id(id).Logs().Id(log.id).update(log)
+        override suspend fun deleteLog(logId: Int) = Api.instance.Movies().Id(id).Logs().Id(logId).delete()
+    }
+
+    class SeriesDetailsAdapter(private val id: Int) : MediaDetailsAdapter<SeriesDetails> {
+        override suspend fun get() = Api.instance.Series().Id(id).get()
+        override suspend fun createTitle(title: TitleCreate) = Api.instance.Series().Id(id).Titles().create(title)
+        override suspend fun setPrimaryTitle(titleId: Int) = Api.instance.Series().Id(id).Titles().Id(titleId).primary()
+        override suspend fun deleteTitle(titleId: Int) = Api.instance.Series().Id(id).Titles().Id(titleId).delete()
+        override suspend fun createGenre(genre: GenreCreate) = Api.instance.Series().Id(id).Genres().create(genre)
+        override suspend fun deleteGenre(genreId: Int) = Api.instance.Series().Id(id).Genres().Id(genreId).delete()
+        override suspend fun createTag(tag: TagCreate) = Api.instance.Series().Id(id).Tags().create(tag)
+        override suspend fun deleteTag(tagId: Int) = Api.instance.Series().Id(id).Tags().Id(tagId).delete()
+        override suspend fun createSource(source: SourceCreate) = Api.instance.Series().Id(id).Sources().create(source)
+        override suspend fun updateSource(source: Source) = Api.instance.Series().Id(id).Sources().Id(source.id).update(source)
+        override suspend fun deleteSource(sourceId: Int) = Api.instance.Series().Id(id).Sources().Id(sourceId).delete()
+        override suspend fun createLog(log: LogCreate) = Api.instance.Series().Id(id).Logs().create(log)
+        override suspend fun updateLog(log: Log) = Api.instance.Series().Id(id).Logs().Id(log.id).update(log)
+        override suspend fun deleteLog(logId: Int) = Api.instance.Series().Id(id).Logs().Id(logId).delete()
+    }
+}
+
+class MediaDetailsViewModel<T: MediaDetails>(
+    private val adapter: MediaDetailsAdapter<T>
 ) : ViewModel() {
-    private val _uiState: MutableStateFlow<MovieDetailsUiState> = MutableStateFlow(MovieDetailsUiState.Loading)
-    val uiState: StateFlow<MovieDetailsUiState> = _uiState.asStateFlow()
+    private val _uiState: MutableStateFlow<MediaDetailsUiState<T>> = MutableStateFlow(MediaDetailsUiState.Loading())
+    val uiState: StateFlow<MediaDetailsUiState<T>> = _uiState.asStateFlow()
 
     init {
         load()
@@ -46,12 +99,12 @@ class MovieDetailsViewModel(
     }
 
     private suspend fun refresh() {
-        val result = Api.instance.Movies().Id(id).get()
+        val result = adapter.get()
 
         when(result) {
             is Result.Error<*> -> TODO()
-            is Result.Success<MovieDetails> -> {
-                _uiState.value = MovieDetailsUiState.Loaded(result.value)
+            is Result.Success<T> -> {
+                _uiState.value = MediaDetailsUiState.Loaded(result.value)
             }
         }
     }
@@ -60,7 +113,7 @@ class MovieDetailsViewModel(
 
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Titles().create(
+                val result = adapter.createTitle(
                     TitleCreate(name = name)
                 )
 
@@ -75,7 +128,7 @@ class MovieDetailsViewModel(
 
         fun setPrimary(title: AlternativeTitle) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Titles().Id(title.id).primary()
+                val result = adapter.setPrimaryTitle(title.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -88,7 +141,7 @@ class MovieDetailsViewModel(
 
         fun delete(title: AlternativeTitle) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Titles().Id(title.id).delete()
+                val result = adapter.deleteTitle(title.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -103,7 +156,7 @@ class MovieDetailsViewModel(
     inner class Genres {
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Genres().create(
+                val result = adapter.createGenre(
                     GenreCreate(name = name)
                 )
 
@@ -118,7 +171,7 @@ class MovieDetailsViewModel(
 
         fun delete(genre: Genre) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Genres().Id(genre.id).delete()
+                val result = adapter.deleteGenre(genre.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -133,7 +186,7 @@ class MovieDetailsViewModel(
     inner class Tags {
         fun create(name: String) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Tags().create(
+                val result = adapter.createTag(
                     TagCreate(name = name)
                 )
 
@@ -148,7 +201,7 @@ class MovieDetailsViewModel(
 
         fun delete(tag: Tag) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Tags().Id(tag.id).delete()
+                val result = adapter.deleteTag(tag.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -164,7 +217,7 @@ class MovieDetailsViewModel(
         fun create(name: String, type: SourceType, url: String) {
             if(name.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Sources().create(
+                val result = adapter.createSource(
                     source = SourceCreate(
                         name = name,
                         type = type,
@@ -184,7 +237,7 @@ class MovieDetailsViewModel(
         fun update(source: Source) {
             if(source.name.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Sources().Id(source.id).update(
+                val result = adapter.updateSource(
                     source = source
                 )
 
@@ -200,7 +253,7 @@ class MovieDetailsViewModel(
 
         fun delete(source: Source) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Sources().Id(source.id).delete()
+                val result = adapter.deleteSource(source.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -223,7 +276,7 @@ class MovieDetailsViewModel(
         ) {
             if(source.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Logs().create(
+                val result = adapter.createLog(
                     log = LogCreate(
                         date = date,
                         source = source,
@@ -245,9 +298,7 @@ class MovieDetailsViewModel(
         fun update(log: Log) {
             if(log.source.isBlank()) return
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Logs().Id(log.id).update(
-                    log = log
-                )
+                val result = adapter.updateLog(log = log)
 
                 when(result) {
                     is Result.Error<*> -> TODO()
@@ -260,7 +311,7 @@ class MovieDetailsViewModel(
 
         fun delete(log: Log) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = Api.instance.Movies().Id(id).Logs().Id(log.id).delete()
+                val result = adapter.deleteLog(log.id)
 
                 when(result) {
                     is Result.Error<*> -> TODO()

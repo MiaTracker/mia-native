@@ -4,6 +4,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,10 +25,12 @@ import androidx.navigation.toRoute
 import components.TopBar
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import view_models.IndexAdapter
+import view_models.MediaDetailsAdapter
 import views.InstanceSelectionView
 import views.LoginView
-import views.MovieDetailsView
-import views.MoviesIndexView
+import views.MediaDetailsView
+import views.MediaIndexList
 
 
 object Navigation {
@@ -39,11 +43,22 @@ object Navigation {
     @Serializable
     object Inner {
         @Serializable
+        object MediaIndex
+
+        @Serializable
         object MoviesIndex
+
+        @Serializable
+        object SeriesIndex
 
         @Serializable
         data class MovieDetails(
             val movieId: Int
+        )
+
+        @Serializable
+        data class SeriesDetails(
+            val seriesId: Int,
         )
     }
 }
@@ -67,16 +82,49 @@ fun RootNavigation() {
             )
         }
         navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
+            composable<Navigation.Inner.MediaIndex> {
+                MediaIndexList(
+                    showType = true,
+                    navController = navController,
+                    drawerState = drawerState,
+                    adapter = IndexAdapter.MediaIndexAdapter(navController),
+                    title = { Text("Media") }
+                )
+            }
             composable<Navigation.Inner.MoviesIndex> {
-                MoviesIndexView(navController = navController, drawerState = drawerState)
+                MediaIndexList(
+                    showType = false,
+                    navController = navController,
+                    drawerState = drawerState,
+                    adapter = IndexAdapter.MoviesIndexAdapter(navController),
+                    title = { Text("Movies") }
+                )
+            }
+            composable<Navigation.Inner.SeriesIndex> {
+                MediaIndexList(
+                    showType = false,
+                    navController = navController,
+                    drawerState = drawerState,
+                    adapter = IndexAdapter.SeriesIndexAdapter(navController),
+                    title = { Text("Series") }
+                )
             }
             composable<Navigation.Inner.MovieDetails> { backStackEntry ->
                 val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
 
-                MovieDetailsView(
-                    movieDetails.movieId,
+                MediaDetailsView(
                     navController = navController,
                     drawerState = drawerState,
+                    adapter = MediaDetailsAdapter.MovieDetailsAdapter(movieDetails.movieId),
+                )
+            }
+            composable<Navigation.Inner.SeriesDetails> { backStackEntry ->
+                val seriesDetails: Navigation.Inner.SeriesDetails = backStackEntry.toRoute()
+
+                MediaDetailsView(
+                    navController = navController,
+                    drawerState = drawerState,
+                    adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
                 )
             }
         }
@@ -95,7 +143,10 @@ fun InnerNavigation(
     val scope = rememberCoroutineScope()
 
     val backstack by navController.currentBackStackEntryAsState()
-    val isOnRoot = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true
+    val isOnRoot =
+        backstack?.destination?.hasRoute<Navigation.Inner.MediaIndex>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true
 
 
     Column(
@@ -146,11 +197,31 @@ fun InnerNavigation(
                     ) {
                         Column {
                             NavigationDrawerItem(
+                                label = { Text("Media") },
+                                icon = { Icon(Icons.Default.PlayArrow, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.MediaIndex>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.MediaIndex)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                            NavigationDrawerItem(
                                 label = { Text("Movies") },
                                 icon = { Icon(Icons.Default.Movie, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true,
                                 onClick = {
                                     navController.navigate(Navigation.Inner.MoviesIndex)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Series") },
+                                icon = { Icon(Icons.Default.Tv, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.SeriesIndex)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

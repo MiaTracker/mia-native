@@ -1,7 +1,6 @@
 package views
 
 import InnerNavigation
-import Navigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.HideImage
-import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,59 +34,64 @@ import components.SearchBar
 import data_objects.ExternalMediaIndex
 import data_objects.InternalMediaIndex
 import data_objects.MediaIndex
+import enums.MediaType
 import helpers.toStarsString
 import io.ktor.http.*
-import view_models.MainUiState
-import view_models.MoviesIndexViewModel
+import view_models.IndexAdapter
+import view_models.MediaIndexUiState
+import view_models.MediaIndexViewModel
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MoviesIndexView(
+fun MediaIndexList(
+    showType: Boolean,
     navController: NavHostController,
     drawerState: DrawerState,
-    viewModel: MoviesIndexViewModel = viewModel { MoviesIndexViewModel(navController) }
+    adapter: IndexAdapter,
+    title: @Composable () -> Unit,
+    viewModel: MediaIndexViewModel = viewModel { MediaIndexViewModel(adapter) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
 
     InnerNavigation(
         navController = navController,
         drawerState = drawerState,
-        title = { Text(text = "Movies") },
+        title = title,
         searchbar = {
             SearchBar(
                 searchQuery = uiState.searchQuery,
                 onSearchQueryChange = viewModel::searchQueryChanged,
                 onCommit = viewModel::searchQueryCommited,
                 queryValid = when(val state = uiState) {
-                    is MainUiState.Loading -> true
-                    is MainUiState.Loaded -> state.searchQueryValid
+                    is MediaIndexUiState.Loading -> true
+                    is MediaIndexUiState.Loaded -> state.searchQueryValid
                 }
             )
         }
     ) {
         when (val state = uiState) {
-            is MainUiState.Loading -> { Text("loading") }
-            is MainUiState.Loaded -> {
+            is MediaIndexUiState.Loading -> { Text("loading") }
+            is MediaIndexUiState.Loaded -> {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(10.dp)
                 ) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        state.internal.forEach { media ->
-                            MediaIndexView(
-                                media = media,
-                                onClick = {
-                                    navController.navigate(Navigation.Inner.MovieDetails(media.id))
-                                }
-                            )
+                    if(state.internal.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        ) {
+                            state.internal.forEach { media ->
+                                MediaIndexView(
+                                    media = media,
+                                    showType = showType,
+                                    onClick = { viewModel.openDetails(media) }
+                                )
+                            }
                         }
                     }
 
@@ -110,8 +112,9 @@ fun MoviesIndexView(
                             external.forEach { media ->
                                 MediaIndexView(
                                     media = media,
+                                    showType = showType,
                                     onClick = {
-                                        viewModel.addExternal(media.externalId)
+                                        viewModel.addExternal(media)
                                     }
                                 )
                             }
@@ -125,7 +128,7 @@ fun MoviesIndexView(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MediaIndexView(media: MediaIndex, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun MediaIndexView(media: MediaIndex, showType: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     var hovered by remember { mutableStateOf(false) }
 
     Box(
@@ -244,6 +247,18 @@ fun MediaIndexView(media: MediaIndex, onClick: () -> Unit, modifier: Modifier = 
                 )
             }
         }
-    }
 
+        if(showType) {
+            Icon(
+                imageVector = when(media.type) {
+                    MediaType.Movie -> Icons.Filled.Movie
+                    MediaType.Series -> Icons.Filled.Tv
+                },
+                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(5.dp)
+            )
+        }
+    }
 }
