@@ -73,7 +73,7 @@ fun Poster(posterPath: String?) {
 }
 
 @Composable
-fun TitlePanel(details: MediaDetails, modifier: Modifier = Modifier) {
+fun TitlePanel(details: MediaDetails, watchlistViewModel: MediaDetailsViewModel<*>.Watchlist, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxWidth()
             .background(Color.Black.copy(alpha = 0.8f))
@@ -85,11 +85,31 @@ fun TitlePanel(details: MediaDetails, modifier: Modifier = Modifier) {
                 .padding(start = 340.dp, end = 20.dp)
                 .fillMaxWidth()
         ) {
-            Text(
-                text = details.title,
-                style = MaterialTheme.typography.displayMedium,
-                color = Color.White
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = details.title,
+                    style = MaterialTheme.typography.displayMedium,
+                    color = Color.White
+                )
+
+                ExpandingToggleButton(
+                    checked = details.onWatchlist,
+                    onCheckedChange = { checked ->
+                        if(checked) watchlistViewModel.add()
+                        else watchlistViewModel.remove()
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null
+                    )
+                }
+            }
 
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,

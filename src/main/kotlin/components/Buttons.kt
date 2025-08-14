@@ -1,12 +1,16 @@
 package components
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.onClick
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -32,6 +36,43 @@ fun InlineIconButton(onClick: () -> Unit, enabled: Boolean = true, icon: @Compos
                     .padding(2.dp)
             ) {
                 icon()
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ExpandingToggleButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color =
+            if(checked) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier
+            .pointerHoverIcon(PointerIcon.Hand)
+    ) {
+        Row(
+            modifier = Modifier
+                .clickable(onClick = { onCheckedChange(!checked) })
+                .padding(vertical = 7.dp, horizontal = 10.dp)
+        ) {
+            icon()
+
+            AnimatedVisibility(
+                visible = checked,
+                enter = slideInHorizontally(initialOffsetX = { it }) + expandHorizontally() + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + shrinkHorizontally() + fadeOut()
+            ) {
+                Text(
+                    text = "On Watchlist",
+                    modifier = Modifier
+                        .padding(start = 10.dp)
+                )
             }
         }
     }

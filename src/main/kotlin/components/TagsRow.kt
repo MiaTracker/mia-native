@@ -63,8 +63,12 @@ fun TagsRow(modifier: Modifier = Modifier, onAdd: (String) -> Unit, tags: @Compo
                         value = tagName,
                         onValueChange = { tagName = it },
                         onDone = { commitTag() },
+                        outline = false,
                         modifier = Modifier
                             .focusRequester(focusRequester)
+                            .widthIn(min = 100.dp)
+                            .width(IntrinsicSize.Min)
+                            .padding(horizontal = 10.dp)
                     )
 
                     LaunchedEffect(Unit) {

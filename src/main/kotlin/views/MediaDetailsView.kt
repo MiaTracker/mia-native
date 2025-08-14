@@ -65,6 +65,7 @@ fun<T: MediaDetails> MediaDetailsView(
                                     Backdrop(details.backdropPath)
                                     TitlePanel(
                                         details = details,
+                                        watchlistViewModel = viewModel.Watchlist(),
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter),
                                     )

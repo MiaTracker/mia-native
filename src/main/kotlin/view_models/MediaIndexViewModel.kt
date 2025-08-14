@@ -70,6 +70,17 @@ sealed interface IndexAdapter {
         override suspend fun create(externalId: Int, type: MediaType) = Api.instance.Series().create(externalId = externalId)
         override fun navigateTo(id: Int, type: MediaType) = navController.navigate(Navigation.Inner.SeriesDetails(id))
     }
+
+    class WatchlistIndexAdapter(private val navController: NavController) : IndexAdapter {
+        override suspend fun index(): Result<List<InternalMediaIndex>> = Api.instance.Watchlist().index()
+        override suspend fun search(query: String, commited: Boolean): Result<SearchResults> = Api.instance.Watchlist().search(query, commited)
+        override suspend fun create(externalId: Int, type: MediaType): Result<Int> = throw Exception()
+        override fun navigateTo(id: Int, type: MediaType) =
+            when (type) {
+                MediaType.Movie -> navController.navigate(Navigation.Inner.MovieDetails(id))
+                MediaType.Series -> navController.navigate(Navigation.Inner.SeriesDetails(id))
+            }
+    }
 }
 
 class MediaIndexViewModel(private val adapter: IndexAdapter) : ViewModel() {

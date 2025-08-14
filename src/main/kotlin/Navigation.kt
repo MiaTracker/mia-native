@@ -5,6 +5,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -50,6 +51,9 @@ object Navigation {
 
         @Serializable
         object SeriesIndex
+
+        @Serializable
+        object Watchlist
 
         @Serializable
         data class MovieDetails(
@@ -109,6 +113,15 @@ fun RootNavigation() {
                     title = { Text("Series") }
                 )
             }
+            composable<Navigation.Inner.Watchlist> {
+                MediaIndexList(
+                    showType = true,
+                    navController = navController,
+                    drawerState = drawerState,
+                    adapter = IndexAdapter.WatchlistIndexAdapter(navController),
+                    title = { Text("Watchlist") }
+                )
+            }
             composable<Navigation.Inner.MovieDetails> { backStackEntry ->
                 val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
 
@@ -146,7 +159,8 @@ fun InnerNavigation(
     val isOnRoot =
         backstack?.destination?.hasRoute<Navigation.Inner.MediaIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
-        backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true
+        backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true
 
 
     Column(
@@ -222,6 +236,16 @@ fun InnerNavigation(
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true,
                                 onClick = {
                                     navController.navigate(Navigation.Inner.SeriesIndex)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Watchlist") },
+                                icon = { Icon(Icons.Default.Schedule, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.Watchlist)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

@@ -40,6 +40,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
     suspend fun deleteGenre(genreId: Int): Result<Unit>
     suspend fun createTag(tag: TagCreate): Result<Unit>
     suspend fun deleteTag(tagId: Int): Result<Unit>
+    suspend fun addToWatchlist(): Result<Unit>
+    suspend fun removeFromWatchlist(): Result<Unit>
     suspend fun createSource(source: SourceCreate): Result<Unit>
     suspend fun updateSource(source: Source): Result<Unit>
     suspend fun deleteSource(sourceId: Int): Result<Unit>
@@ -56,6 +58,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun deleteGenre(genreId: Int) = Api.instance.Movies().Id(id).Genres().Id(genreId).delete()
         override suspend fun createTag(tag: TagCreate) = Api.instance.Movies().Id(id).Tags().create(tag)
         override suspend fun deleteTag(tagId: Int) = Api.instance.Movies().Id(id).Tags().Id(tagId).delete()
+        override suspend fun addToWatchlist() = Api.instance.Watchlist().add(id)
+        override suspend fun removeFromWatchlist() = Api.instance.Watchlist().remove(id)
         override suspend fun createSource(source: SourceCreate) = Api.instance.Movies().Id(id).Sources().create(source)
         override suspend fun updateSource(source: Source) = Api.instance.Movies().Id(id).Sources().Id(source.id).update(source)
         override suspend fun deleteSource(sourceId: Int) = Api.instance.Movies().Id(id).Sources().Id(sourceId).delete()
@@ -73,6 +77,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun deleteGenre(genreId: Int) = Api.instance.Series().Id(id).Genres().Id(genreId).delete()
         override suspend fun createTag(tag: TagCreate) = Api.instance.Series().Id(id).Tags().create(tag)
         override suspend fun deleteTag(tagId: Int) = Api.instance.Series().Id(id).Tags().Id(tagId).delete()
+        override suspend fun addToWatchlist() = Api.instance.Watchlist().add(id)
+        override suspend fun removeFromWatchlist() = Api.instance.Watchlist().remove(id)
         override suspend fun createSource(source: SourceCreate) = Api.instance.Series().Id(id).Sources().create(source)
         override suspend fun updateSource(source: Source) = Api.instance.Series().Id(id).Sources().Id(source.id).update(source)
         override suspend fun deleteSource(sourceId: Int) = Api.instance.Series().Id(id).Sources().Id(sourceId).delete()
@@ -202,6 +208,34 @@ class MediaDetailsViewModel<T: MediaDetails>(
         fun delete(tag: Tag) {
             viewModelScope.launch(Dispatchers.IO) {
                 val result = adapter.deleteTag(tag.id)
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+    }
+
+    inner class Watchlist {
+        fun add() {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = adapter.addToWatchlist()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<*> -> {
+                        refresh()
+                    }
+                }
+            }
+        }
+
+        fun remove() {
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = adapter.removeFromWatchlist()
 
                 when(result) {
                     is Result.Error<*> -> TODO()

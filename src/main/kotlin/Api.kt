@@ -100,6 +100,55 @@ object Api {
                 get() = TypeInfo(SeriesDetails::class)
         }
 
+        inner class Watchlist : BaseMediaApi() {
+            override val subpath: String
+                get() = "watchlist"
+
+            suspend fun add(mediaId: Int): Result<Unit> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments(subpath, "add")
+                        }
+
+                        setBody(
+                            WatchlistChangeBody(
+                                mediaId = mediaId
+                            )
+                        )
+                    }
+                }
+
+                return if (response.status.isSuccess()) {
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun remove(mediaId: Int): Result<Unit> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments(subpath, "remove")
+                        }
+
+                        setBody(
+                            WatchlistChangeBody(
+                                mediaId = mediaId
+                            )
+                        )
+                    }
+                }
+
+                return if (response.status.isSuccess()) {
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+        }
+
         abstract inner class BaseMediaApi {
             protected abstract val subpath: String
 

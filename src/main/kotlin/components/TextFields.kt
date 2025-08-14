@@ -45,6 +45,7 @@ fun InlineTextField(
     placeholder: String? = null,
     alignment: Alignment.Horizontal = Alignment.Start,
     readOnly: Boolean = false,
+    outline: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable () -> Unit = {},
     modifier: Modifier = Modifier
@@ -86,6 +87,7 @@ fun InlineTextField(
         placeholder = placeholder,
         alignment = alignment,
         readOnly = readOnly,
+        outline = outline,
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
         modifier = modifier
@@ -100,6 +102,7 @@ fun InlineTextField(
     placeholder: String? = null,
     alignment: Alignment.Horizontal = Alignment.Start,
     readOnly: Boolean = false,
+    outline: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -160,7 +163,7 @@ fun InlineTextField(
                         .fillMaxWidth()
                         .fillMaxHeight()
                         .let {
-                            if(readOnly) it
+                            if(readOnly || !outline) it
                             else {
                                 it
                                     .drawBehind {
