@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import components.TopBar
+import infrastructure.Preferences
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import view_models.IndexAdapter
@@ -74,71 +75,77 @@ fun RootNavigation() {
 
     val drawerState = rememberDrawerState(DrawerValue.Open)
 
-    NavHost(navController, startDestination = Navigation.InstanceSelection) {
-        composable<Navigation.InstanceSelection> {
-            InstanceSelectionView(
-                navController = navController
-            )
-        }
-        composable<Navigation.Login> {
-            LoginView(
-                navController = navController
-            )
-        }
-        navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
-            composable<Navigation.Inner.MediaIndex> {
-                MediaIndexList(
-                    showType = true,
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = IndexAdapter.MediaIndexAdapter(navController),
-                    title = { Text("Media") }
-                )
-            }
-            composable<Navigation.Inner.MoviesIndex> {
-                MediaIndexList(
-                    showType = false,
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = IndexAdapter.MoviesIndexAdapter(navController),
-                    title = { Text("Movies") }
-                )
-            }
-            composable<Navigation.Inner.SeriesIndex> {
-                MediaIndexList(
-                    showType = false,
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = IndexAdapter.SeriesIndexAdapter(navController),
-                    title = { Text("Series") }
-                )
-            }
-            composable<Navigation.Inner.Watchlist> {
-                MediaIndexList(
-                    showType = true,
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = IndexAdapter.WatchlistIndexAdapter(navController),
-                    title = { Text("Watchlist") }
-                )
-            }
-            composable<Navigation.Inner.MovieDetails> { backStackEntry ->
-                val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize(),
+    ) {
 
-                MediaDetailsView(
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = MediaDetailsAdapter.MovieDetailsAdapter(movieDetails.movieId),
+        NavHost(navController, startDestination = Navigation.InstanceSelection) {
+            composable<Navigation.InstanceSelection> {
+                InstanceSelectionView(
+                    navController = navController
                 )
             }
-            composable<Navigation.Inner.SeriesDetails> { backStackEntry ->
-                val seriesDetails: Navigation.Inner.SeriesDetails = backStackEntry.toRoute()
-
-                MediaDetailsView(
-                    navController = navController,
-                    drawerState = drawerState,
-                    adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
+            composable<Navigation.Login> {
+                LoginView(
+                    navController = navController
                 )
+            }
+            navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
+                composable<Navigation.Inner.MediaIndex> {
+                    MediaIndexList(
+                        showType = true,
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = IndexAdapter.MediaIndexAdapter(navController),
+                        title = { Text("Media") }
+                    )
+                }
+                composable<Navigation.Inner.MoviesIndex> {
+                    MediaIndexList(
+                        showType = false,
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = IndexAdapter.MoviesIndexAdapter(navController),
+                        title = { Text("Movies") }
+                    )
+                }
+                composable<Navigation.Inner.SeriesIndex> {
+                    MediaIndexList(
+                        showType = false,
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = IndexAdapter.SeriesIndexAdapter(navController),
+                        title = { Text("Series") }
+                    )
+                }
+                composable<Navigation.Inner.Watchlist> {
+                    MediaIndexList(
+                        showType = true,
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = IndexAdapter.WatchlistIndexAdapter(navController),
+                        title = { Text("Watchlist") }
+                    )
+                }
+                composable<Navigation.Inner.MovieDetails> { backStackEntry ->
+                    val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
+
+                    MediaDetailsView(
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = MediaDetailsAdapter.MovieDetailsAdapter(movieDetails.movieId),
+                    )
+                }
+                composable<Navigation.Inner.SeriesDetails> { backStackEntry ->
+                    val seriesDetails: Navigation.Inner.SeriesDetails = backStackEntry.toRoute()
+
+                    MediaDetailsView(
+                        navController = navController,
+                        drawerState = drawerState,
+                        adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
+                    )
+                }
             }
         }
     }
@@ -258,7 +265,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
                                 selected = false,
                                 onClick = {
-                                    Api.instance.loginResult = null
+                                    Preferences.Authorization.clear()
                                     navController.navigate(Navigation.Login)
                                 },
                                 modifier = Modifier

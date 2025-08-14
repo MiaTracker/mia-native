@@ -1,6 +1,5 @@
 package views
 
-import Navigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
@@ -22,107 +21,106 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import view_models.LoginUiState
 import view_models.LoginViewModel
 
 @Composable
 fun LoginView(navController: NavHostController, viewModel: LoginViewModel = viewModel { LoginViewModel(navController) }) {
-    val state by viewModel.uiState.collectAsState()
+    val vmState by viewModel.uiState.collectAsState()
+
+    val state = vmState
+    if(state !is LoginUiState.Loaded) return
 
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.fillMaxSize(),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-        Box(
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.Center)
+                .width(700.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+            Text(
+                text = "Login",
+                style = MaterialTheme.typography.displayMedium,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .width(700.dp)
+                    .fillMaxWidth()
+            )
+
+            TextField(
+                value = state.username,
+                onValueChange = { viewModel.setUsername(it) },
+                label = { Text("Username") },
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
+                },
+                singleLine = true,
+                isError = state.isLoginIncorrect,
+                enabled = !state.loggingIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onKeyEvent { event ->
+                        if(event.key == Key.Enter || event.key == Key.Tab) {
+                            if(event.type == KeyEventType.KeyDown)
+                                focusManager.moveFocus(FocusDirection.Down)
+                            true
+                        } else false
+                    },
+            )
+
+            TextField(
+                value = state.password,
+                onValueChange = { viewModel.setPassword(it) },
+                label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardActions = KeyboardActions(
+                    onDone = { viewModel.login() }
+                ),
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                },
+                enabled = !state.loggingIn,
+                isError = state.isLoginIncorrect,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onKeyEvent { event ->
+                        if(event.key == Key.Enter) {
+                            if(event.type == KeyEventType.KeyDown)
+                                viewModel.login()
+                            true
+                        } else false
+                    },
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
-                Text(
-                    text = "Login",
-                    style = MaterialTheme.typography.displayMedium,
-                    textAlign = TextAlign.Center,
+                TextButton(
+                    onClick = { viewModel.changeInstance() },
                     modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                TextField(
-                    value = state.username,
-                    onValueChange = { viewModel.setUsername(it) },
-                    label = { Text("Username") },
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.moveFocus(FocusDirection.Down) }
-                    ),
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
-                    },
-                    singleLine = true,
-                    isError = state.isLoginIncorrect,
-                    enabled = !state.loggingIn,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester)
-                        .onKeyEvent { event ->
-                            if(event.key == Key.Enter || event.key == Key.Tab) {
-                                if(event.type == KeyEventType.KeyDown)
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                true
-                            } else false
-                        },
-                )
-
-                TextField(
-                    value = state.password,
-                    onValueChange = { viewModel.setPassword(it) },
-                    label = { Text("Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardActions = KeyboardActions(
-                        onDone = { viewModel.login() }
-                    ),
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-                    },
-                    enabled = !state.loggingIn,
-                    isError = state.isLoginIncorrect,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onKeyEvent { event ->
-                            if(event.key == Key.Enter) {
-                                if(event.type == KeyEventType.KeyDown)
-                                    viewModel.login()
-                                true
-                            } else false
-                        },
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                        .pointerHoverIcon(PointerIcon.Hand)
                 ) {
-                    TextButton(
-                        onClick = { navController.navigate(Navigation.InstanceSelection) },
-                        modifier = Modifier
-                            .pointerHoverIcon(PointerIcon.Hand)
-                    ) {
-                        Text("Change instance")
-                    }
+                    Text("Change instance")
+                }
 
-                    Button(
-                        onClick = { viewModel.login() },
-                        enabled = state.isValid && !state.loggingIn && !state.isLoginIncorrect,
-                        modifier = Modifier
-                            .pointerHoverIcon(if(state.isValid) PointerIcon.Hand else PointerIcon.Default)
-                    ) {
-                        Text("Login")
-                    }
+                Button(
+                    onClick = { viewModel.login() },
+                    enabled = state.isValid && !state.loggingIn && !state.isLoginIncorrect,
+                    modifier = Modifier
+                        .pointerHoverIcon(if(state.isValid) PointerIcon.Hand else PointerIcon.Default)
+                ) {
+                    Text("Login")
                 }
             }
         }

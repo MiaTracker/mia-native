@@ -8,47 +8,66 @@ import androidx.navigation.NavHostController
 import data_objects.LoginRequest
 import data_objects.LoginResult
 import data_objects.Result
+import infrastructure.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class LoginUiState(
-    val username: String = "",
-    val password: String = "",
-    val isValid: Boolean = false,
-    val isLoginIncorrect: Boolean = false,
-    val loggingIn: Boolean = false,
-)
+sealed interface LoginUiState {
+    object Loading : LoginUiState
+    data class Loaded(
+        val username: String = "",
+        val password: String = "",
+        val isValid: Boolean = false,
+        val isLoginIncorrect: Boolean = false,
+        val loggingIn: Boolean = false,
+    ) : LoginUiState
+}
 
 class LoginViewModel(
     val navController: NavHostController
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LoginUiState())
+    private val _uiState: MutableStateFlow<LoginUiState> = MutableStateFlow(LoginUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
+    init {
+        if(Preferences.Authorization.token != null) navController.navigate(Navigation.Inner.MediaIndex)
+        else _uiState.value = LoginUiState.Loaded()
+    }
+
     fun setUsername(username: String) {
-        _uiState.value = _uiState.value.copy(
+        val state = _uiState.value
+        if(state !is LoginUiState.Loaded) return
+        _uiState.value = state.copy(
             username = username,
-            isValid = _uiState.value.password.isNotEmpty() && username.isNotBlank(),
+            isValid = state.password.isNotEmpty() && username.isNotBlank(),
             isLoginIncorrect = false
         )
     }
 
     fun setPassword(password: String) {
-        _uiState.value = _uiState.value.copy(
+        val state = _uiState.value
+        if(state !is LoginUiState.Loaded) return
+        _uiState.value = state.copy(
             password = password,
-            isValid = password.isNotEmpty() && _uiState.value.username.isNotBlank(),
+            isValid = password.isNotEmpty() && state.username.isNotBlank(),
             isLoginIncorrect = false
         )
     }
 
+    fun changeInstance() {
+        Preferences.instanceUrl = null
+        navController.navigate(Navigation.InstanceSelection)
+    }
+
     fun login() {
         val state = uiState.value
+        if(state !is LoginUiState.Loaded) return
         if(!state.isValid) return
 
-        _uiState.value = _uiState.value.copy(loggingIn = true)
+        _uiState.value = state.copy(loggingIn = true)
         viewModelScope.launch(Dispatchers.IO) {
             val result = Api.instance.Users().login(
                 LoginRequest(
@@ -60,12 +79,12 @@ class LoginViewModel(
             when (result) {
                 is Result.Error<*> -> {
                     //TODO
-                    _uiState.value = _uiState.value.copy(isLoginIncorrect = true, loggingIn = false)
+                    _uiState.value = state.copy(isLoginIncorrect = true, loggingIn = false)
                 }
                 is Result.Success<LoginResult> -> {
-                    Api.instance.loginResult = result.value
+                    Preferences.Authorization.assign(result.value)
                     viewModelScope.launch(Dispatchers.Main) {
-                        navController.navigate(Navigation.Inner.MoviesIndex)
+                        navController.navigate(Navigation.Inner.MediaIndex)
                     }
                 }
             }

@@ -1,4 +1,5 @@
 import data_objects.*
+import infrastructure.Preferences
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.okhttp.*
@@ -14,49 +15,45 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 
 object Api {
-    private var _instance: Instance? = null
-    val instance: Instance
-        get() = _instance ?: error("Instance not initialized")
+    val instance: Instance = Instance()
 
-    fun connectDefault(url: String) {
-        _instance = Instance(url)
-    }
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun httpClient(): HttpClient = HttpClient(OkHttp)
+        .config {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        namingStrategy = JsonNamingStrategy.SnakeCase
+                    }
+                )
+            }
 
-    class Instance(private val baseUrl: String) {
-        var loginResult: LoginResult? = null
+            defaultRequest {
+                contentType(ContentType.Application.Json)
 
-        @OptIn(ExperimentalSerializationApi::class)
-        private fun httpClient(): HttpClient = HttpClient(OkHttp)
-            .config {
-                install(ContentNegotiation) {
-                    json(
-                        Json {
-                            namingStrategy = JsonNamingStrategy.SnakeCase
-                        }
-                    )
+                Preferences.Authorization.token?.let { token ->
+                    header(HttpHeaders.Authorization, "Bearer $token")
                 }
+            }
+        }
 
-                defaultRequest {
-                    contentType(ContentType.Application.Json)
-
-                    loginResult?.let { result ->
-                        header(HttpHeaders.Authorization, "Bearer ${result.token}")
+    suspend fun ping(instance: String): Boolean {
+        try {
+            val response = httpClient().use { client ->
+                client.get(instance) {
+                    url {
+                        appendPathSegments("ping")
                     }
                 }
             }
+            return response.status.isSuccess()
+        } catch(_: Exception) { return false }
+    }
 
-        suspend fun ping(): Boolean {
-            try {
-                val response = httpClient().use { client ->
-                    client.get(baseUrl) {
-                        url {
-                            appendPathSegments("ping")
-                        }
-                    }
-                }
-                return response.status.isSuccess()
-            } catch(_: Exception) { return false }
-        }
+    class Instance {
+        private val baseUrl: String
+            get() = Preferences.instanceUrl ?: "No Url"
+//                ?: throw Exception("InstanceUrl not yet set!")
 
         inner class Users {
             suspend fun login(request: LoginRequest): Result<LoginResult> {
