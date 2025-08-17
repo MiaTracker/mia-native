@@ -1,6 +1,7 @@
 package components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.InternalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -214,6 +215,7 @@ fun InlineTextField(
 }
 
 
+@OptIn(InternalFoundationApi::class)
 @Composable
 fun InlineDropdown(
     options: List<String>,

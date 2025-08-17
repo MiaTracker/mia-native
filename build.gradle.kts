@@ -1,12 +1,10 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.compose.reload.ComposeHotRun
-import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 
 plugins {
     kotlin("jvm") version "2.1.21"
     kotlin("plugin.compose") version "2.1.21"
-    id("org.jetbrains.compose") version "1.8.0"
-    id("org.jetbrains.compose.hot-reload") version "1.0.0-alpha10"
+    id("org.jetbrains.compose") version "1.8.2"
+    id("org.jetbrains.compose.hot-reload") version "1.0.0-beta05"
     kotlin("plugin.serialization") version "2.1.21"
 }
 
@@ -46,7 +44,7 @@ compose.desktop {
     application {
         mainClass = "MainKt"
 
-        jvmArgs("-Dawt.toolkit.name=WLToolkit")
+//        jvmArgs("-Dawt.toolkit.name=WLToolkit")
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -54,12 +52,4 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
-}
-
-composeCompiler {
-    featureFlags.add(ComposeFeatureFlag.OptimizeNonSkippingGroups)
-}
-
-tasks.withType<ComposeHotRun>().configureEach {
-    mainClass.set("MainKt")
 }

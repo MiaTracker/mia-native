@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import views.InstanceSelectionView
 import views.LoginView
 import views.MediaDetailsView
 import views.MediaIndexList
+import views.SettingsProfileView
 
 
 object Navigation {
@@ -65,6 +67,12 @@ object Navigation {
         data class SeriesDetails(
             val seriesId: Int,
         )
+
+        @Serializable
+        object Settings {
+            @Serializable
+            object Profile
+        }
     }
 }
 
@@ -146,6 +154,15 @@ fun RootNavigation() {
                         adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
                     )
                 }
+
+                navigation<Navigation.Inner.Settings>(startDestination = Navigation.Inner.Settings.Profile) {
+                    composable<Navigation.Inner.Settings.Profile> {
+                        SettingsProfileView(
+                            navController = navController,
+                            drawerState = drawerState
+                        )
+                    }
+                }
             }
         }
     }
@@ -167,7 +184,8 @@ fun InnerNavigation(
         backstack?.destination?.hasRoute<Navigation.Inner.MediaIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true ||
-        backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true
+        backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true
 
 
     Column(
@@ -260,6 +278,16 @@ fun InnerNavigation(
                         }
 
                         Column {
+                            NavigationDrawerItem(
+                                label = { Text("Settings") },
+                                icon = { Icon(Icons.Filled.Settings, null) },
+                                selected = false,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.Settings)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
                             NavigationDrawerItem(
                                 label = { Text("Logout") },
                                 icon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },

@@ -74,6 +74,40 @@ object Api {
                     Result.Error(response.body<ApiErrorList>())
                 }
             }
+
+            suspend fun profile(): Result<UserProfile> {
+                val response = httpClient().use { client ->
+                    client.get(baseUrl) {
+                        url {
+                            appendPathSegments("users", "profile")
+                        }
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<UserProfile>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun changePassword(change: PasswordChange): Result<Unit> {
+                val response = httpClient().use { client ->
+                    client.patch(baseUrl) {
+                        url {
+                            appendPathSegments("users", "password")
+                        }
+
+                        setBody(change)
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
         }
 
         inner class Media : BaseMediaApi() {
