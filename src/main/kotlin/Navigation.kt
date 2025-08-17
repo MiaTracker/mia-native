@@ -2,12 +2,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,11 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import view_models.IndexAdapter
 import view_models.MediaDetailsAdapter
-import views.InstanceSelectionView
-import views.LoginView
-import views.MediaDetailsView
-import views.MediaIndexList
-import views.SettingsProfileView
+import views.*
 
 
 object Navigation {
@@ -72,6 +63,9 @@ object Navigation {
         object Settings {
             @Serializable
             object Profile
+
+            @Serializable
+            object About
         }
     }
 }
@@ -158,6 +152,12 @@ fun RootNavigation() {
                 navigation<Navigation.Inner.Settings>(startDestination = Navigation.Inner.Settings.Profile) {
                     composable<Navigation.Inner.Settings.Profile> {
                         SettingsProfileView(
+                            navController = navController,
+                            drawerState = drawerState
+                        )
+                    }
+                    composable<Navigation.Inner.Settings.About> {
+                        SettingsAboutView(
                             navController = navController,
                             drawerState = drawerState
                         )
@@ -308,5 +308,55 @@ fun InnerNavigation(
             },
             drawerState = drawerState
         )
+    }
+}
+
+@Composable
+fun SettingsNavigation(
+    navController: NavHostController,
+    drawerState: DrawerState,
+    content: @Composable () -> Unit
+) {
+    val backstack by navController.currentBackStackEntryAsState()
+
+    InnerNavigation(
+        navController = navController,
+        drawerState = drawerState,
+        title = { Text("Profile") }
+    ) {
+        PermanentNavigationDrawer(
+            drawerContent = {
+                Surface(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .fillMaxHeight()
+                ) {
+                    Column {
+                        NavigationDrawerItem(
+                            label = { Text("Profile") },
+                            icon = { Icon(Icons.Default.Person, null) },
+                            selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true,
+                            onClick = {
+                                navController.navigate(Navigation.Inner.Settings.Profile)
+                            },
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text("About") },
+                            icon = { Icon(Icons.Default.Info, null) },
+                            selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.About>() == true,
+                            onClick = {
+                                navController.navigate(Navigation.Inner.Settings.About)
+                            },
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                        )
+                    }
+                }
+            }
+        ) {
+            content()
+        }
     }
 }

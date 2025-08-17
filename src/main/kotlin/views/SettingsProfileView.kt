@@ -1,12 +1,10 @@
 package views
 
-import InnerNavigation
-import Navigation
+import SettingsNavigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,9 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import view_models.SettingsProfileUiState
 import view_models.SettingsProfileViewModel
 
@@ -35,93 +31,66 @@ fun SettingsProfileView(
     val state = uiState
     if(state !is SettingsProfileUiState.Loaded) return
 
-    val backstack by navController.currentBackStackEntryAsState()
-
-    InnerNavigation(
+    SettingsNavigation(
         navController = navController,
-        drawerState = drawerState,
-        title = { Text("Profile") }
+        drawerState = drawerState
     ) {
-
-        PermanentNavigationDrawer(
-            drawerContent = {
-                Surface(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .fillMaxHeight()
-                ) {
-                    Column {
-                        NavigationDrawerItem(
-                            label = { Text("Profile") },
-                            icon = { Icon(Icons.Default.Person, null) },
-                            selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true,
-                            onClick = {
-                                navController.navigate(Navigation.Inner.Settings.Profile)
-                            },
-                            modifier = Modifier
-                                .pointerHoverIcon(PointerIcon.Hand)
-                        )
-                    }
-                }
-            }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(10.dp)
+            TextField(
+                value = state.profile.username,
+                onValueChange = {},
+                label = { Text("Username") },
+                enabled = false
+            )
+
+            TextField(
+                value = state.profile.email,
+                onValueChange = {},
+                label = { Text("Email") },
+                enabled = false
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextField(
-                    value = state.profile.username,
-                    onValueChange = {},
-                    label = { Text("Username") },
-                    enabled = false
-                )
-
-                TextField(
-                    value = state.profile.email,
-                    onValueChange = {},
-                    label = { Text("Email") },
-                    enabled = false
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = state.profile.admin,
-                        onCheckedChange = {},
-                        enabled = false,
-                        modifier = Modifier
-                            .pointerHoverIcon(PointerIcon.Hand)
-                    )
-
-                    Text(
-                        text = "Admin",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    )
-                }
-
-                OutlinedButton(
-                    onClick = viewModel::openChangePasswordDialog,
+                Checkbox(
+                    checked = state.profile.admin,
+                    onCheckedChange = {},
+                    enabled = false,
                     modifier = Modifier
                         .pointerHoverIcon(PointerIcon.Hand)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(Icons.Filled.Lock, null)
-                        Text("Change Password")
-                    }
-                }
-            }
+                )
 
-            if(state.changePasswordDialogState != null) {
-                PasswordChangeDialog(
-                    state = state.changePasswordDialogState,
-                    viewModel = viewModel
+                Text(
+                    text = "Admin",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 )
             }
+
+            OutlinedButton(
+                onClick = viewModel::openChangePasswordDialog,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(Icons.Filled.Lock, null)
+                    Text("Change Password")
+                }
+            }
+        }
+
+        if(state.changePasswordDialogState != null) {
+            PasswordChangeDialog(
+                state = state.changePasswordDialogState,
+                viewModel = viewModel
+            )
         }
     }
 }
