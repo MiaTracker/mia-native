@@ -78,6 +78,7 @@ fun SettingsProfileView(
                     .pointerHoverIcon(PointerIcon.Hand)
             ) {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(Icons.Filled.Lock, null)

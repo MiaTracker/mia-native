@@ -6,7 +6,6 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.reflect.*
@@ -52,10 +51,26 @@ object Api {
 
     class Instance {
         private val baseUrl: String
-            get() = Preferences.instanceUrl ?: "No Url"
-//                ?: throw Exception("InstanceUrl not yet set!")
+            get() = Preferences.instanceUrl
+                ?: throw Exception("InstanceUrl not yet set!")
 
         inner class Users {
+            suspend fun index(): Result<List<UserProfile>> {
+                val response = httpClient().use { client ->
+                    client.get(baseUrl) {
+                        url {
+                            appendPathSegments("users")
+                        }
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<List<UserProfile>>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
             suspend fun login(request: LoginRequest): Result<LoginResult> {
                 val response = httpClient().use { client ->
                     client.post(baseUrl) {
@@ -66,8 +81,6 @@ object Api {
                     }
                 }
 
-                val body = response.bodyAsText()
-                println(body)
                 return if(response.status.isSuccess()) {
                     Result.Success(response.body<LoginResult>())
                 } else {
@@ -99,6 +112,40 @@ object Api {
                         }
 
                         setBody(change)
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun register(user: UserRegister): Result<Unit> {
+                val response = httpClient().use { client ->
+                    client.post(baseUrl) {
+                        url {
+                            appendPathSegments("users", "register")
+                        }
+
+                        setBody(user)
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(Unit)
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+
+            suspend fun delete(uuid: String): Result<Unit> {
+                val response = httpClient().use { client ->
+                    client.delete(baseUrl) {
+                        url {
+                            appendPathSegments("users", uuid)
+                        }
                     }
                 }
 

@@ -10,6 +10,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -66,6 +67,9 @@ object Navigation {
 
             @Serializable
             object About
+
+            @Serializable
+            object Users
         }
     }
 }
@@ -162,6 +166,12 @@ fun RootNavigation() {
                             drawerState = drawerState
                         )
                     }
+                    composable<Navigation.Inner.Settings.Users> {
+                        SettingsUsersView(
+                            navController = navController,
+                            drawerState = drawerState
+                        )
+                    }
                 }
             }
         }
@@ -185,7 +195,9 @@ fun InnerNavigation(
         backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true ||
-        backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true
+        backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Settings.About>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Settings.Users>() == true
 
 
     Column(
@@ -352,6 +364,28 @@ fun SettingsNavigation(
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)
                         )
+
+                        Spacer(Modifier.height(20.dp))
+                        Text(
+                            text = "Administration",
+                            style = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        )
+
+                        if(Preferences.Authorization.admin) {
+                            Spacer(Modifier.height(10.dp))
+                            NavigationDrawerItem(
+                                label = { Text("Users") },
+                                icon = { Icon(Icons.Default.People, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.Users>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.Settings.Users)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                        }
                     }
                 }
             }
