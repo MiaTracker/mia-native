@@ -8,6 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import org.jetbrains.compose.resources.painterResource
+import org.nara.mia_native.generated.resources.Res
+import org.nara.mia_native.generated.resources.icon
 
 @Composable
 @Preview
@@ -29,8 +32,11 @@ fun App() {
 
 fun main() {
     application {
-        Window(onCloseRequest = ::exitApplication) {
-        App()
+        Window(
+            onCloseRequest = ::exitApplication,
+            icon = painterResource(Res.drawable.icon)
+        ) {
+            App()
         }
     }
 }

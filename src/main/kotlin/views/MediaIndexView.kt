@@ -30,6 +30,7 @@ import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import components.Scrollable
 import components.SearchBar
 import data_objects.ExternalMediaIndex
 import data_objects.InternalMediaIndex
@@ -72,51 +73,54 @@ fun MediaIndexList(
         when (val state = uiState) {
             is MediaIndexUiState.Loading -> { Text("loading") }
             is MediaIndexUiState.Loaded -> {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp)
-                ) {
-                    if(state.internal.isNotEmpty()) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            state.internal.forEach { media ->
-                                MediaIndexView(
-                                    media = media,
-                                    showType = showType,
-                                    onClick = { viewModel.openDetails(media) }
-                                )
+                Scrollable {
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(15.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(15.dp)
+                    ) {
+                        if(state.internal.isNotEmpty()) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.CenterHorizontally),
+                                verticalArrangement = Arrangement.spacedBy(15.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ) {
+                                state.internal.forEach { media ->
+                                    MediaIndexView(
+                                        media = media,
+                                        showType = showType,
+                                        onClick = { viewModel.openDetails(media) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    state.external.let { external ->
-                        if(external.isEmpty()) return@let
+                        state.external.let { external ->
+                            if(external.isEmpty()) return@let
 
-                        Text(
-                            text = "External:",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
+                            Text(
+                                text = "External:",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
 
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            external.forEach { media ->
-                                MediaIndexView(
-                                    media = media,
-                                    showType = showType,
-                                    onClick = {
-                                        viewModel.addExternal(media)
-                                    }
-                                )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.CenterHorizontally),
+                                verticalArrangement = Arrangement.spacedBy(15.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ) {
+                                external.forEach { media ->
+                                    MediaIndexView(
+                                        media = media,
+                                        showType = showType,
+                                        onClick = {
+                                            viewModel.addExternal(media)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -133,8 +137,8 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, onClick: () -> Unit, mo
 
     Box(
         modifier = modifier
-            .width(160.dp)
-            .height(240.dp)
+            .width(180.dp)
+            .height(270.dp)
             .onPointerEvent(PointerEventType.Enter) {
                 hovered = true
             }

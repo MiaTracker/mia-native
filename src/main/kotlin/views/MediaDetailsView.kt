@@ -3,8 +3,6 @@ package views
 import InnerNavigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,13 +45,7 @@ fun<T: MediaDetails> MediaDetailsView(
             is MediaDetailsUiState.Loaded<T> -> {
                 val details = state.mediaDetails
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .wrapContentHeight(),
-                ) {
-
+                Scrollable {
                     MediaDetailsLayout(
                         header = {
                             Column(
