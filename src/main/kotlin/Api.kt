@@ -582,6 +582,41 @@ object Api {
                         }
                     }
                 }
+
+                inner class Images {
+                    suspend fun backdrops(): Result<List<MediaImage>> {
+                        val response = httpClient().use { client ->
+                            client.get(baseUrl) {
+                                url {
+                                    appendPathSegments(subpath, mediaId.toString(), "images")
+                                }
+                            }
+                        }
+
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(response.body<MediaImages>().backdrops)
+                        } else {
+                            Result.Error(response.body<ApiErrorList>())
+                        }
+                    }
+
+                    suspend fun posters(): Result<List<MediaImage>> {
+                        val response = httpClient().use { client ->
+                            client.get(baseUrl) {
+                                url {
+                                    appendPathSegments(subpath, mediaId.toString(), "images")
+                                }
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(response.body<MediaImages>().posters)
+                        } else {
+                            Result.Error(response.body<ApiErrorList>())
+                        }
+                    }
+                }
             }
         }
     }

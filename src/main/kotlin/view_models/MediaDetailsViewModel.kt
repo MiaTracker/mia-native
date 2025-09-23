@@ -8,6 +8,7 @@ import data_objects.GenreCreate
 import data_objects.Log
 import data_objects.LogCreate
 import data_objects.MediaDetails
+import data_objects.MediaImage
 import data_objects.MovieDetails
 import data_objects.Result
 import data_objects.SeriesDetails
@@ -24,10 +25,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
+sealed interface BackdropSelectionUiState {
+    object Loading: BackdropSelectionUiState
+    data class Loaded(
+        val backdrops: List<MediaImage>
+    ) : BackdropSelectionUiState
+}
+
 sealed interface MediaDetailsUiState<T: MediaDetails> {
     class Loading<T: MediaDetails> : MediaDetailsUiState<T>
     data class Loaded<T: MediaDetails>(
         val mediaDetails: T,
+
+        val backdropSelectionState: BackdropSelectionUiState? = null
     ) : MediaDetailsUiState<T>
 }
 
@@ -48,6 +58,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
     suspend fun createLog(log: LogCreate): Result<Unit>
     suspend fun updateLog(log: Log): Result<Unit>
     suspend fun deleteLog(logId: Int): Result<Unit>
+    suspend fun getBackdrops(): Result<List<MediaImage>>
+    suspend fun getPosters(): Result<List<MediaImage>>
 
     class MovieDetailsAdapter(private val id: Int) : MediaDetailsAdapter<MovieDetails> {
         override suspend fun get() = Api.instance.Movies().Id(id).get()
@@ -66,6 +78,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Movies().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Movies().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Movies().Id(id).Logs().Id(logId).delete()
+        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Images().backdrops()
+        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Images().posters()
     }
 
     class SeriesDetailsAdapter(private val id: Int) : MediaDetailsAdapter<SeriesDetails> {
@@ -85,6 +99,8 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Series().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Series().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Series().Id(id).Logs().Id(logId).delete()
+        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Images().backdrops()
+        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Images().posters()
     }
 }
 
@@ -111,6 +127,27 @@ class MediaDetailsViewModel<T: MediaDetails>(
             is Result.Error<*> -> TODO()
             is Result.Success<T> -> {
                 _uiState.value = MediaDetailsUiState.Loaded(result.value)
+            }
+        }
+    }
+
+    inner class Images {
+        fun openBackdropSelection() {
+            val state = _uiState.value
+            if(state !is MediaDetailsUiState.Loaded) return
+            _uiState.value = state.copy(backdropSelectionState = BackdropSelectionUiState.Loading)
+
+            viewModelScope.launch(Dispatchers.IO) {
+                val result = adapter.getBackdrops()
+
+                when(result) {
+                    is Result.Error<*> -> TODO()
+                    is Result.Success<List<MediaImage>> -> {
+                        val state = _uiState.value
+                        if(state !is MediaDetailsUiState.Loaded) return@launch
+                        _uiState.value = state.copy(backdropSelectionState = BackdropSelectionUiState.Loaded(result.value))
+                    }
+                }
             }
         }
     }

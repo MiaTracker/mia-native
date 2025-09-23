@@ -1,6 +1,10 @@
 package components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -26,27 +30,56 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import view_models.MediaDetailsViewModel
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Backdrop(backdropPath: String?) {
-    AsyncImage(
-        model = ImageRequest.Builder(LocalPlatformContext.current)
-            .data(
-                buildUrl {
-                    takeFrom("https://image.tmdb.org/t/p/original/")
-                    appendPathSegments(backdropPath!!) //TODO
-                }.toString()
-            )
-            .error {
-                null
-            }
-            //TODO: fallback and err
-            .build(),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
+fun Backdrop(
+    backdropPath: String?,
+    onEdit: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(500.dp)
-    )
+            .hoverable(interactionSource)
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(
+                    buildUrl {
+                        takeFrom("https://image.tmdb.org/t/p/original/")
+                        appendPathSegments(backdropPath!!) //TODO
+                    }.toString()
+                )
+                .error {
+                    null
+                }
+                //TODO: fallback and err
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+//        if(isHovered) {
+//            Box(
+//                modifier = Modifier
+//                    .align(Alignment.TopEnd)
+//                    .padding(20.dp)
+//            ) {
+//                Icon(
+//                    imageVector = Icons.Default.Edit,
+//                    contentDescription = null,
+//                    modifier = Modifier
+//                        .pointerHoverIcon(PointerIcon.Hand)
+//                        .onClick { onEdit() }
+//                )
+//            }
+//        }
+    }
 }
 
 @Composable

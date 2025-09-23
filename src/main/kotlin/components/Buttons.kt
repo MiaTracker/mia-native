@@ -1,6 +1,7 @@
 package components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -56,10 +58,12 @@ fun ExpandingToggleButton(
         modifier = Modifier
             .pointerHoverIcon(PointerIcon.Hand)
     ) {
+        val horizontalPadding by animateDpAsState(targetValue = if(checked) 10.dp else 7.dp)
+
         Row(
             modifier = Modifier
                 .clickable(onClick = { onCheckedChange(!checked) })
-                .padding(vertical = 7.dp, horizontal = 10.dp)
+                .padding(vertical = 7.dp, horizontal = horizontalPadding)
         ) {
             icon()
 

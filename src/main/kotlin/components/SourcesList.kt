@@ -6,11 +6,13 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -18,6 +20,8 @@ import data_objects.Source
 import enums.SourceType
 import helpers.append
 import helpers.max
+
+private val UrlRegex = Regex("(http(s)?://.)?(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)")
 
 @Composable
 fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier) {
@@ -39,7 +43,7 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
     val nameWidth = with(density) {
         sources.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
                 .append(nameLabelWidth).max()?.toDp() ?: 0.dp
-    }
+    } + 10.dp
 
 
     Column(
@@ -105,6 +109,11 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
                 nameWidth = nameWidth,
                 onCommit = { commit() }
             ) {
+
+                val isUrl = remember(url) {
+                    UrlRegex.matchEntire(url) != null
+                }
+
                 if(editable) {
                     TagIcon(
                         onClick = { clear() }
@@ -121,6 +130,16 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
                     }
                 }
                 else {
+                    if(isUrl) {
+                        val uriHandler = LocalUriHandler.current
+
+                        TagIcon(
+                            onClick = { uriHandler.openUri(url) }
+                        ) {
+                            Icon(imageVector = Icons.Default.Link, contentDescription = null)
+                        }
+                    }
+
                     TagIcon(
                         onClick = { editable = true }
                     ) {

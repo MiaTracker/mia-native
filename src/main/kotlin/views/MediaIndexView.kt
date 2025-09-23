@@ -5,6 +5,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.onClick
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
@@ -30,7 +32,7 @@ import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
-import components.Scrollable
+import components.LazyFlowRow
 import components.SearchBar
 import data_objects.ExternalMediaIndex
 import data_objects.InternalMediaIndex
@@ -73,54 +75,46 @@ fun MediaIndexList(
         when (val state = uiState) {
             is MediaIndexUiState.Loading -> { Text("loading") }
             is MediaIndexUiState.Loaded -> {
-                Scrollable {
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(15.dp),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(15.dp)
-                    ) {
-                        if(state.internal.isNotEmpty()) {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.CenterHorizontally),
-                                verticalArrangement = Arrangement.spacedBy(15.dp),
+                LazyFlowRow {
+                    if(state.internal.isNotEmpty()) {
+                        items(state.internal) { media ->
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                             ) {
-                                state.internal.forEach { media ->
-                                    MediaIndexView(
-                                        media = media,
-                                        showType = showType,
-                                        onClick = { viewModel.openDetails(media) }
-                                    )
-                                }
+                                MediaIndexView(
+                                    media = media,
+                                    showType = showType,
+                                    onClick = { viewModel.openDetails(media) },
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
                             }
                         }
+                    }
 
-                        state.external.let { external ->
-                            if(external.isEmpty()) return@let
-
+                    if(state.external.isNotEmpty()) {
+                        item(
+                            span = { GridItemSpan(maxLineSpan) }
+                        ) {
                             Text(
                                 text = "External:",
                                 style = MaterialTheme.typography.titleLarge,
                             )
+                        }
 
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.CenterHorizontally),
-                                verticalArrangement = Arrangement.spacedBy(15.dp),
+                        items(state.external) { media ->
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                             ) {
-                                external.forEach { media ->
-                                    MediaIndexView(
-                                        media = media,
-                                        showType = showType,
-                                        onClick = {
-                                            viewModel.addExternal(media)
-                                        }
-                                    )
-                                }
+                                MediaIndexView(
+                                    media = media,
+                                    showType = showType,
+                                    onClick = {
+                                        viewModel.addExternal(media)
+                                    },
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
                             }
                         }
                     }

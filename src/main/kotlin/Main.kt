@@ -34,7 +34,8 @@ fun main() {
     application {
         Window(
             onCloseRequest = ::exitApplication,
-            icon = painterResource(Res.drawable.icon)
+            icon = painterResource(Res.drawable.icon),
+            title = "Mia"
         ) {
             App()
         }
