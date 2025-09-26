@@ -583,35 +583,81 @@ object Api {
                     }
                 }
 
-                inner class Images {
-                    suspend fun backdrops(): Result<List<MediaImage>> {
+                inner class Backdrops {
+                    suspend fun index(): Result<List<MediaImage>> {
                         val response = httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
-                                    appendPathSegments(subpath, mediaId.toString(), "images")
+                                    appendPathSegments(subpath, mediaId.toString(), "backdrops")
                                 }
                             }
                         }
 
 
                         return if(response.status.isSuccess()) {
-                            Result.Success(response.body<MediaImages>().backdrops)
+                            Result.Success(response.body<List<MediaImage>>())
                         } else {
                             Result.Error(response.body<ApiErrorList>())
                         }
                     }
 
-                    suspend fun posters(): Result<List<MediaImage>> {
+                    suspend fun default(path: String): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.patch(baseUrl) {
+                                url {
+                                    appendPathSegments(subpath, mediaId.toString(), "backdrops", "default")
+                                }
+
+                                setBody(
+                                    BackdropUpdate(
+                                        path = path
+                                    )
+                                )
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
+                        } else {
+                            Result.Error(response.body<ApiErrorList>())
+                        }
+                    }
+                }
+
+                inner class Posters {
+                    suspend fun index(): Result<List<MediaImage>> {
                         val response = httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
-                                    appendPathSegments(subpath, mediaId.toString(), "images")
+                                    appendPathSegments(subpath, mediaId.toString(), "posters")
                                 }
                             }
                         }
 
                         return if(response.status.isSuccess()) {
-                            Result.Success(response.body<MediaImages>().posters)
+                            Result.Success(response.body<List<MediaImage>>())
+                        } else {
+                            Result.Error(response.body<ApiErrorList>())
+                        }
+                    }
+
+                    suspend fun default(path: String): Result<Unit> {
+                        val response = httpClient().use { client ->
+                            client.patch(baseUrl) {
+                                url {
+                                    appendPathSegments(subpath, mediaId.toString(), "posters", "default")
+                                }
+
+                                setBody(
+                                    PosterUpdate(
+                                        path = path
+                                    )
+                                )
+                            }
+                        }
+
+                        return if(response.status.isSuccess()) {
+                            Result.Success(Unit)
                         } else {
                             Result.Error(response.body<ApiErrorList>())
                         }

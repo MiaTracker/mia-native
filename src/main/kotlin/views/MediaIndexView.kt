@@ -75,7 +75,9 @@ fun MediaIndexList(
         when (val state = uiState) {
             is MediaIndexUiState.Loading -> { Text("loading") }
             is MediaIndexUiState.Loaded -> {
-                LazyFlowRow {
+                LazyFlowRow(
+                    width = 180.dp
+                ) {
                     if(state.internal.isNotEmpty()) {
                         items(state.internal) { media ->
                             Box(

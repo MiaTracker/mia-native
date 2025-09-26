@@ -99,14 +99,16 @@ fun MediaDetailsLayout(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LazyFlowRow(
+    width: Dp,
+    modifier: Modifier = Modifier,
     content: LazyGridScope.() -> Unit
 ) {
     LazyVerticalGrid(
-        columns = GridCells.FixedSize(size = 180.dp),
+        columns = GridCells.FixedSize(size = width),
         verticalArrangement = Arrangement.spacedBy(15.dp),
         horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.CenterHorizontally),
         contentPadding = PaddingValues(15.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
     ) {
         content()

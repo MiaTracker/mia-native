@@ -1,22 +1,9 @@
 package view_models
 
+import Api
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import data_objects.AlternativeTitle
-import data_objects.Genre
-import data_objects.GenreCreate
-import data_objects.Log
-import data_objects.LogCreate
-import data_objects.MediaDetails
-import data_objects.MediaImage
-import data_objects.MovieDetails
-import data_objects.Result
-import data_objects.SeriesDetails
-import data_objects.Source
-import data_objects.SourceCreate
-import data_objects.Tag
-import data_objects.TagCreate
-import data_objects.TitleCreate
+import data_objects.*
 import enums.SourceType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +46,9 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
     suspend fun updateLog(log: Log): Result<Unit>
     suspend fun deleteLog(logId: Int): Result<Unit>
     suspend fun getBackdrops(): Result<List<MediaImage>>
+    suspend fun setDefaultBackdrop(path: String): Result<Unit>
     suspend fun getPosters(): Result<List<MediaImage>>
+    suspend fun setDefaultPoster(path: String): Result<Unit>
 
     class MovieDetailsAdapter(private val id: Int) : MediaDetailsAdapter<MovieDetails> {
         override suspend fun get() = Api.instance.Movies().Id(id).get()
@@ -78,8 +67,10 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Movies().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Movies().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Movies().Id(id).Logs().Id(logId).delete()
-        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Images().backdrops()
-        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Images().posters()
+        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Backdrops().index()
+        override suspend fun setDefaultBackdrop(path: String): Result<Unit> = Api.instance.Movies().Id(id).Backdrops().default(path)
+        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Posters().index()
+        override suspend fun setDefaultPoster(path: String): Result<Unit> = Api.instance.Movies().Id(id).Posters().default(path)
     }
 
     class SeriesDetailsAdapter(private val id: Int) : MediaDetailsAdapter<SeriesDetails> {
@@ -99,8 +90,10 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Series().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Series().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Series().Id(id).Logs().Id(logId).delete()
-        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Images().backdrops()
-        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Images().posters()
+        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Backdrops().index()
+        override suspend fun setDefaultBackdrop(path: String): Result<Unit> = Api.instance.Series().Id(id).Backdrops().default(path)
+        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Posters().index()
+        override suspend fun setDefaultPoster(path: String): Result<Unit> = Api.instance.Series().Id(id).Posters().default(path)
     }
 }
 
@@ -131,7 +124,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
     }
 
-    inner class Images {
+    inner class Backdrops {
         fun openBackdropSelection() {
             val state = _uiState.value
             if(state !is MediaDetailsUiState.Loaded) return
@@ -148,6 +141,31 @@ class MediaDetailsViewModel<T: MediaDetails>(
                         _uiState.value = state.copy(backdropSelectionState = BackdropSelectionUiState.Loaded(result.value))
                     }
                 }
+            }
+        }
+
+        fun closeBackdropSelection() {
+            val state = _uiState.value
+            if(state !is MediaDetailsUiState.Loaded) return
+            _uiState.value = state.copy(backdropSelectionState = null)
+        }
+
+        fun setBackdrop(backdrop: MediaImage) {
+            if(!backdrop.current) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    val result = adapter.setDefaultBackdrop(backdrop.filePath)
+
+                    when(result) {
+                        is Result.Error<*> -> TODO()
+                        is Result.Success<*> -> {
+                            refresh()
+                            closeBackdropSelection()
+                        }
+                    }
+                }
+            }
+            else {
+                closeBackdropSelection()
             }
         }
     }
