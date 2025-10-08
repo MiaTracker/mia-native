@@ -27,11 +27,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import components.*
 import data_objects.MediaDetails
+import infrastructure.ImageSizeInterceptor
 import io.ktor.http.*
 import view_models.BackdropSelectionUiState
 import view_models.MediaDetailsAdapter
@@ -168,6 +170,11 @@ fun BackdropSelection(state: BackdropSelectionUiState, viewModel: MediaDetailsVi
                                 .pointerHoverIcon(PointerIcon.Hand)
                         ) {
                             AsyncImage(
+                                imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+                                    .components {
+                                        add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
+                                    }
+                                    .build(),
                                 model = ImageRequest.Builder(LocalPlatformContext.current)
                                     .data(
                                         buildUrl {

@@ -54,6 +54,24 @@ object Api {
             get() = Preferences.instanceUrl
                 ?: throw Exception("InstanceUrl not yet set!")
 
+        inner class Configuration {
+            suspend fun images(): Result<ImagesConfiguration> {
+                val response = httpClient().use { client ->
+                    client.get(baseUrl) {
+                        url {
+                            appendPathSegments("configuration", "images")
+                        }
+                    }
+                }
+
+                return if(response.status.isSuccess()) {
+                    Result.Success(response.body<ImagesConfiguration>())
+                } else {
+                    Result.Error(response.body<ApiErrorList>())
+                }
+            }
+        }
+
         inner class Users {
             suspend fun index(): Result<List<UserProfile>> {
                 val response = httpClient().use { client ->

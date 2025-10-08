@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import data_objects.LoginRequest
 import data_objects.LoginResult
 import data_objects.Result
+import infrastructure.Configuration
 import infrastructure.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +34,14 @@ class LoginViewModel(
     val uiState = _uiState.asStateFlow()
 
     init {
-        if(Preferences.Authorization.token != null) navController.navigate(Navigation.Inner.MediaIndex)
+        if(Preferences.Authorization.token != null) {
+            viewModelScope.launch {
+                Configuration.initialize()
+                viewModelScope.launch(Dispatchers.Main) {
+                    navController.navigate(Navigation.Inner.MediaIndex)
+                }
+            }
+        }
         else _uiState.value = LoginUiState.Loaded()
     }
 
@@ -83,6 +91,7 @@ class LoginViewModel(
                 }
                 is Result.Success<LoginResult> -> {
                     Preferences.Authorization.assign(result.value)
+                    Configuration.initialize()
                     viewModelScope.launch(Dispatchers.Main) {
                         navController.navigate(Navigation.Inner.MediaIndex)
                     }

@@ -21,12 +21,14 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import data_objects.*
 import enums.SourceType
 import helpers.toStarsString
+import infrastructure.ImageSizeInterceptor
 import io.ktor.http.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -50,6 +52,11 @@ fun Backdrop(
             .hoverable(interactionSource)
     ) {
         AsyncImage(
+            imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+                .components {
+                    add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
+                }
+                .build(),
             model = ImageRequest.Builder(LocalPlatformContext.current)
                 .data(
                     buildUrl {
@@ -88,13 +95,13 @@ fun Backdrop(
 @Composable
 fun Poster(posterPath: String?) {
     AsyncImage(
+        imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+            .components {
+                add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
+            }
+            .build(),
         model = ImageRequest.Builder(LocalPlatformContext.current)
-            .data(
-                buildUrl {
-                    takeFrom("https://image.tmdb.org/t/p/original/")
-                    appendPathSegments(posterPath!!) //TODO
-                }.toString()
-            )
+            .data(posterPath!!)
             .error {
                 null
             }

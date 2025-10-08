@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -39,7 +40,7 @@ import data_objects.InternalMediaIndex
 import data_objects.MediaIndex
 import enums.MediaType
 import helpers.toStarsString
-import io.ktor.http.*
+import infrastructure.ImageSizeInterceptor
 import view_models.IndexAdapter
 import view_models.MediaIndexUiState
 import view_models.MediaIndexViewModel
@@ -155,13 +156,13 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, onClick: () -> Unit, mo
 
         if(path != null) {
             AsyncImage(
+                imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+                    .components {
+                        add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
+                    }
+                    .build(),
                 model = ImageRequest.Builder(LocalPlatformContext.current)
-                    .data(
-                        buildUrl {
-                            takeFrom("https://image.tmdb.org/t/p/original/")
-                            appendPathSegments(path)
-                        }.toString()
-                    )
+                    .data(path)
                     .error {
                         null
                     }
