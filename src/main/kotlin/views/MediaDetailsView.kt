@@ -35,7 +35,6 @@ import coil3.request.ImageRequest
 import components.*
 import data_objects.MediaDetails
 import infrastructure.ImageSizeInterceptor
-import io.ktor.http.*
 import view_models.ImageSelectionUiState
 import view_models.MediaDetailsAdapter
 import view_models.MediaDetailsUiState
@@ -192,12 +191,7 @@ fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewMode
                                     }
                                     .build(),
                                 model = ImageRequest.Builder(LocalPlatformContext.current)
-                                    .data(
-                                        buildUrl {
-                                            takeFrom("https://image.tmdb.org/t/p/original/")
-                                            appendPathSegments(image.filePath) //TODO
-                                        }.toString()
-                                    )
+                                    .data(image.filePath)
                                     .error {
                                         null
                                     }

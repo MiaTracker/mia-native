@@ -20,14 +20,16 @@ class ImageSizeInterceptor(val imageType: ImageType) : Interceptor {
 
         val (width, height) = chain.size
 
+        val newUri = buildUrl {
+            takeFrom(Configuration.images.secureBaseUrl)
+            appendPathSegments(
+                if(width is Dimension.Pixels && height is Dimension.Pixels) getSlug(width, height)
+                else getSlug(Dimension(Int.MAX_VALUE), Dimension(Int.MAX_VALUE)))
+            appendPathSegments(uri)
+        }.toString()
+
         val transformedRequest = request.newBuilder()
-            .data(buildUrl {
-                takeFrom(Configuration.images.secureBaseUrl)
-                appendPathSegments(
-                    if(width is Dimension.Pixels && height is Dimension.Pixels) getSlug(width, height)
-                    else getSlug(Dimension(Int.MAX_VALUE), Dimension(Int.MAX_VALUE)))
-                appendPathSegments(uri)
-            }.toString())
+            .data(newUri)
             .build()
         return chain.withRequest(transformedRequest).proceed()
     }

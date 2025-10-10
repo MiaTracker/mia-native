@@ -29,7 +29,6 @@ import data_objects.*
 import enums.SourceType
 import helpers.toStarsString
 import infrastructure.ImageSizeInterceptor
-import io.ktor.http.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -58,12 +57,7 @@ fun Backdrop(
                 }
                 .build(),
             model = ImageRequest.Builder(LocalPlatformContext.current)
-                .data(
-                    buildUrl {
-                        takeFrom("https://image.tmdb.org/t/p/original/")
-                        appendPathSegments(backdropPath!!) //TODO
-                    }.toString()
-                )
+                .data(backdropPath!!) //TODO
                 .error {
                     null
                 }
