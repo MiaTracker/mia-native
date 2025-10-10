@@ -92,27 +92,57 @@ fun Backdrop(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Poster(posterPath: String?) {
-    AsyncImage(
-        imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-            .components {
-                add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
-            }
-            .build(),
-        model = ImageRequest.Builder(LocalPlatformContext.current)
-            .data(posterPath!!)
-            .error {
-                null
-            }
-            //TODO: fallback and err
-            .build(),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
+fun Poster(
+    posterPath: String?,
+    onEdit: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+
+    Box(
         modifier = Modifier
             .width(300.dp)
             .height(450.dp)
-    )
+            .hoverable(interactionSource)
+    ) {
+        AsyncImage(
+            imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+                .components {
+                    add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
+                }
+                .build(),
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(posterPath!!)
+                .error {
+                    null
+                }
+                //TODO: fallback and err
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+
+        if(isHovered) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(20.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .onClick { onEdit() }
+                )
+            }
+        }
+    }
 }
 
 @Composable

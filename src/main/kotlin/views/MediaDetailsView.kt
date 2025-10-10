@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -35,7 +36,7 @@ import components.*
 import data_objects.MediaDetails
 import infrastructure.ImageSizeInterceptor
 import io.ktor.http.*
-import view_models.BackdropSelectionUiState
+import view_models.ImageSelectionUiState
 import view_models.MediaDetailsAdapter
 import view_models.MediaDetailsUiState
 import view_models.MediaDetailsViewModel
@@ -66,10 +67,10 @@ fun<T: MediaDetails> MediaDetailsView(
             is MediaDetailsUiState.Loaded<T> -> {
 
                 AnimatedContent(
-                    targetState = state.backdropSelectionState
-                ) { backdropSelectionState ->
-                    if(backdropSelectionState != null) {
-                        BackdropSelection(backdropSelectionState, viewModel.Backdrops())
+                    targetState = state.imageSelectionState
+                ) { imageSelectionState ->
+                    if(imageSelectionState != null) {
+                        ImageSelection(imageSelectionState, viewModel)
                     }
                     else {
                         MediaDetails(
@@ -93,7 +94,7 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                 ) {
                     Backdrop(
                         backdropPath = details.backdropPath,
-                        onEdit = { viewModel.Backdrops().openBackdropSelection() }
+                        onEdit = { viewModel.Backdrops().openImageSelection() }
                     )
                     TitlePanel(
                         details = details,
@@ -104,7 +105,10 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                 }
             },
             poster = {
-                Poster(details.posterPath)
+                Poster(
+                    posterPath = details.posterPath,
+                    onEdit = { viewModel.Posters().openImageSelection() }
+                )
             },
             rightContent = {
                 Column(
@@ -144,28 +148,40 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
 }
 
 @Composable
-fun BackdropSelection(state: BackdropSelectionUiState, viewModel: MediaDetailsViewModel<*>.Backdrops) {
+fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewModel<*>) {
+
     when(state) {
-        is BackdropSelectionUiState.Loading -> {}
-        is BackdropSelectionUiState.Loaded -> {
+        is ImageSelectionUiState.Loading -> {}
+        is ImageSelectionUiState.LoadedImageSelectionUiState -> {
+
+            val viewModel = when(state) {
+                is ImageSelectionUiState.BackdropSelection -> viewModel.Backdrops()
+                is ImageSelectionUiState.PosterSelection -> viewModel.Posters()
+            }
+
+            val imageSize = when(state) {
+                is ImageSelectionUiState.BackdropSelection -> DpSize(300.dp, 157.dp)
+                is ImageSelectionUiState.PosterSelection -> DpSize(200.dp, 300.dp)
+            }
+
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
                 LazyFlowRow(
-                    width = 310.dp,
+                    width = imageSize.width + 10.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(state.backdrops) { backdrop ->
+                    items(state.images) { image ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .background(
-                                    if(backdrop.current) MaterialTheme.colorScheme.primaryContainer
+                                    if(image.current) MaterialTheme.colorScheme.primaryContainer
                                     else Color.Transparent
                                 )
                                 .padding(5.dp)
                                 .clickable {
-                                    viewModel.setBackdrop(backdrop)
+                                    viewModel.setImage(image)
                                 }
                                 .pointerHoverIcon(PointerIcon.Hand)
                         ) {
@@ -179,7 +195,7 @@ fun BackdropSelection(state: BackdropSelectionUiState, viewModel: MediaDetailsVi
                                     .data(
                                         buildUrl {
                                             takeFrom("https://image.tmdb.org/t/p/original/")
-                                            appendPathSegments(backdrop.filePath) //TODO
+                                            appendPathSegments(image.filePath) //TODO
                                         }.toString()
                                     )
                                     .error {
@@ -190,16 +206,16 @@ fun BackdropSelection(state: BackdropSelectionUiState, viewModel: MediaDetailsVi
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .height(157.dp)
+                                    .height(imageSize.height)
                                     .fillMaxWidth()
                             )
                             Text(
-                                text = "${backdrop.width}x${backdrop.height}",
+                                text = "${image.width}x${image.height}",
                             )
 
-                            if(backdrop.language != null) {
+                            if(image.language != null) {
                                 Text(
-                                    text = backdrop.language
+                                    text = image.language
                                 )
                             }
                         }
@@ -212,7 +228,7 @@ fun BackdropSelection(state: BackdropSelectionUiState, viewModel: MediaDetailsVi
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.5f))
                         .clickable {
-                            viewModel.closeBackdropSelection()
+                            viewModel.closeImageSelection()
                         }
                         .pointerHoverIcon(PointerIcon.Hand)
                 ) {

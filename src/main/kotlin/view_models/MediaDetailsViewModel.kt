@@ -12,11 +12,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
-sealed interface BackdropSelectionUiState {
-    object Loading: BackdropSelectionUiState
-    data class Loaded(
-        val backdrops: List<MediaImage>
-    ) : BackdropSelectionUiState
+sealed interface ImageSelectionUiState {
+    sealed interface LoadedImageSelectionUiState : ImageSelectionUiState {
+        val images: List<MediaImage>
+    }
+
+    object Loading: ImageSelectionUiState
+    data class BackdropSelection(
+        override val images: List<MediaImage>
+    ) : LoadedImageSelectionUiState
+    data class PosterSelection(
+        override val images: List<MediaImage>
+    ) : LoadedImageSelectionUiState
 }
 
 sealed interface MediaDetailsUiState<T: MediaDetails> {
@@ -24,7 +31,7 @@ sealed interface MediaDetailsUiState<T: MediaDetails> {
     data class Loaded<T: MediaDetails>(
         val mediaDetails: T,
 
-        val backdropSelectionState: BackdropSelectionUiState? = null
+        val imageSelectionState: ImageSelectionUiState? = null
     ) : MediaDetailsUiState<T>
 }
 
@@ -124,50 +131,68 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
     }
 
-    inner class Backdrops {
-        fun openBackdropSelection() {
+    abstract inner class ImageSelection {
+        fun openImageSelection() {
             val state = _uiState.value
             if(state !is MediaDetailsUiState.Loaded) return
-            _uiState.value = state.copy(backdropSelectionState = BackdropSelectionUiState.Loading)
+            _uiState.value = state.copy(imageSelectionState = ImageSelectionUiState.Loading)
 
             viewModelScope.launch(Dispatchers.IO) {
-                val result = adapter.getBackdrops()
+                val result = getImagesApi()
 
                 when(result) {
                     is Result.Error<*> -> TODO()
                     is Result.Success<List<MediaImage>> -> {
                         val state = _uiState.value
                         if(state !is MediaDetailsUiState.Loaded) return@launch
-                        _uiState.value = state.copy(backdropSelectionState = BackdropSelectionUiState.Loaded(result.value))
+                        _uiState.value = state.copy(imageSelectionState = createState(result.value))
                     }
                 }
             }
         }
 
-        fun closeBackdropSelection() {
+        fun closeImageSelection() {
             val state = _uiState.value
             if(state !is MediaDetailsUiState.Loaded) return
-            _uiState.value = state.copy(backdropSelectionState = null)
+            _uiState.value = state.copy(imageSelectionState = null)
         }
 
-        fun setBackdrop(backdrop: MediaImage) {
+        fun setImage(backdrop: MediaImage) {
             if(!backdrop.current) {
                 viewModelScope.launch(Dispatchers.IO) {
-                    val result = adapter.setDefaultBackdrop(backdrop.filePath)
+                    val result = setDefaultImageApi(backdrop.filePath)
 
                     when(result) {
                         is Result.Error<*> -> TODO()
                         is Result.Success<*> -> {
                             refresh()
-                            closeBackdropSelection()
+                            closeImageSelection()
                         }
                     }
                 }
             }
             else {
-                closeBackdropSelection()
+                closeImageSelection()
             }
         }
+
+        protected abstract suspend fun getImagesApi(): Result<List<MediaImage>>
+        protected abstract suspend fun setDefaultImageApi(path: String): Result<Unit>
+        protected abstract fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState
+    }
+
+    inner class Backdrops : ImageSelection() {
+        override suspend fun getImagesApi(): Result<List<MediaImage>> = adapter.getBackdrops()
+        override suspend fun setDefaultImageApi(path: String): Result<Unit> = adapter.setDefaultBackdrop(path)
+        override fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState =
+            ImageSelectionUiState.BackdropSelection(images)
+    }
+
+    inner class Posters : ImageSelection() {
+        override suspend fun getImagesApi(): Result<List<MediaImage>> = adapter.getPosters()
+        override suspend fun setDefaultImageApi(path: String): Result<Unit> = adapter.setDefaultPoster(path)
+        override fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState =
+            ImageSelectionUiState.PosterSelection(images)
     }
 
     inner class AlternativeTitles {
