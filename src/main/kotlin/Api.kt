@@ -683,5 +683,21 @@ object Api {
                 }
             }
         }
+
+        suspend fun statistics(): Result<Stats> {
+            val response = httpClient().use { client ->
+                client.get(baseUrl) {
+                    url {
+                        appendPathSegments("statistics")
+                    }
+                }
+            }
+
+            return if(response.status.isSuccess()) {
+                Result.Success(response.body<Stats>())
+            } else {
+                Result.Error(response.body<ApiErrorList>())
+            }
+        }
     }
 }

@@ -38,6 +38,9 @@ dependencies {
     implementation(compose.components.resources)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.charts)
+    implementation(libs.colormath)
+    implementation(libs.colormath.ext.jetpack.compose)
 }
 
 compose.desktop {

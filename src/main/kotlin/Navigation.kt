@@ -51,6 +51,9 @@ object Navigation {
         object Watchlist
 
         @Serializable
+        object Statistics
+
+        @Serializable
         data class MovieDetails(
             val movieId: Int
         )
@@ -134,6 +137,12 @@ fun RootNavigation() {
                         title = { Text("Watchlist") }
                     )
                 }
+                composable<Navigation.Inner.Statistics> {
+                    StatisticsView(
+                        navController = navController,
+                        drawerState = drawerState
+                    )
+                }
                 composable<Navigation.Inner.MovieDetails> { backStackEntry ->
                     val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
 
@@ -195,6 +204,7 @@ fun InnerNavigation(
         backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Statistics>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Settings.About>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Settings.Users>() == true
@@ -283,6 +293,16 @@ fun InnerNavigation(
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true,
                                 onClick = {
                                     navController.navigate(Navigation.Inner.Watchlist)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Statistics") },
+                                icon = { Icon(Icons.Default.BarChart, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.Statistics>() == true,
+                                onClick = {
+                                    navController.navigate(Navigation.Inner.Statistics)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

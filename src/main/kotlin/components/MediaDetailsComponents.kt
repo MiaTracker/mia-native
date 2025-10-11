@@ -161,7 +161,8 @@ fun TitlePanel(details: MediaDetails, watchlistViewModel: MediaDetailsViewModel<
                 Text(
                     text = details.title,
                     style = MaterialTheme.typography.displayMedium,
-                    color = Color.White
+                    color = Color.White,
+                    modifier = Modifier.weight(2f)
                 )
 
                 ExpandingToggleButton(
