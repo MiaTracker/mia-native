@@ -9,6 +9,7 @@ import data_objects.InternalMediaIndex
 import data_objects.Result
 import data_objects.Stats
 import enums.MediaType
+import infrastructure.ErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ sealed interface StatisticsUiState {
 }
 
 class StatisticsViewModel(
-    val navController: NavHostController
+    private val navController: NavHostController,
+    private val errorHandler: ErrorHandler
 ) : ViewModel() {
     private val _uiState: MutableStateFlow<StatisticsUiState> = MutableStateFlow(StatisticsUiState.Loading)
     val uiState: StateFlow<StatisticsUiState> = _uiState.asStateFlow()
@@ -29,7 +31,7 @@ class StatisticsViewModel(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             when(val result = Api.instance.statistics()) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<Stats> -> {
                     _uiState.value = StatisticsUiState.Loaded(
                         stats = result.value

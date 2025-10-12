@@ -21,11 +21,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import infrastructure.ErrorHandler
 import view_models.LoginUiState
 import view_models.LoginViewModel
 
 @Composable
-fun LoginView(navController: NavHostController, viewModel: LoginViewModel = viewModel { LoginViewModel(navController) }) {
+fun LoginView(
+    navController: NavHostController,
+    errorHandler: ErrorHandler,
+    viewModel: LoginViewModel = viewModel {
+        LoginViewModel(
+            navController = navController,
+            errorHandler = errorHandler
+        )
+    }
+) {
     val vmState by viewModel.uiState.collectAsState()
 
     val state = vmState

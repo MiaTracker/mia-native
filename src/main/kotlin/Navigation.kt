@@ -6,7 +6,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -21,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import components.TopBar
+import infrastructure.ErrorHandler
 import infrastructure.Preferences
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -82,106 +85,133 @@ object Navigation {
 fun RootNavigation() {
     val navController = rememberNavController()
 
+    val errorHandler = remember { ErrorHandler(navController) }
+
     val drawerState = rememberDrawerState(DrawerValue.Open)
 
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize(),
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            NavHost(navController, startDestination = Navigation.InstanceSelection) {
+                composable<Navigation.InstanceSelection> {
+                    InstanceSelectionView(
+                        navController = navController
+                    )
+                }
+                composable<Navigation.Login> {
+                    LoginView(
+                        navController = navController,
+                        errorHandler = errorHandler
+                    )
+                }
+                navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
+                    composable<Navigation.Inner.MediaIndex> {
+                        MediaIndexList(
+                            showType = true,
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = IndexAdapter.MediaIndexAdapter(navController),
+                            title = { Text("Media") }
+                        )
+                    }
+                    composable<Navigation.Inner.MoviesIndex> {
+                        MediaIndexList(
+                            showType = false,
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = IndexAdapter.MoviesIndexAdapter(navController),
+                            title = { Text("Movies") }
+                        )
+                    }
+                    composable<Navigation.Inner.SeriesIndex> {
+                        MediaIndexList(
+                            showType = false,
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = IndexAdapter.SeriesIndexAdapter(navController),
+                            title = { Text("Series") }
+                        )
+                    }
+                    composable<Navigation.Inner.Watchlist> {
+                        MediaIndexList(
+                            showType = true,
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = IndexAdapter.WatchlistIndexAdapter(navController),
+                            title = { Text("Watchlist") }
+                        )
+                    }
+                    composable<Navigation.Inner.Statistics> {
+                        StatisticsView(
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler
+                        )
+                    }
+                    composable<Navigation.Inner.MovieDetails> { backStackEntry ->
+                        val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
 
-        NavHost(navController, startDestination = Navigation.InstanceSelection) {
-            composable<Navigation.InstanceSelection> {
-                InstanceSelectionView(
-                    navController = navController
-                )
+                        MediaDetailsView(
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = MediaDetailsAdapter.MovieDetailsAdapter(movieDetails.movieId),
+                        )
+                    }
+                    composable<Navigation.Inner.SeriesDetails> { backStackEntry ->
+                        val seriesDetails: Navigation.Inner.SeriesDetails = backStackEntry.toRoute()
+
+                        MediaDetailsView(
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
+                        )
+                    }
+
+                    navigation<Navigation.Inner.Settings>(startDestination = Navigation.Inner.Settings.Profile) {
+                        composable<Navigation.Inner.Settings.Profile> {
+                            SettingsProfileView(
+                                navController = navController,
+                                drawerState = drawerState,
+                                errorHandler = errorHandler
+                            )
+                        }
+                        composable<Navigation.Inner.Settings.About> {
+                            SettingsAboutView(
+                                navController = navController,
+                                drawerState = drawerState
+                            )
+                        }
+                        composable<Navigation.Inner.Settings.Users> {
+                            SettingsUsersView(
+                                navController = navController,
+                                drawerState = drawerState,
+                                errorHandler = errorHandler
+                            )
+                        }
+                    }
+                }
             }
-            composable<Navigation.Login> {
-                LoginView(
-                    navController = navController
+
+            SnackbarHost(
+                hostState = errorHandler.state,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                Snackbar(
+                    snackbarData = it,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
-            }
-            navigation<Navigation.Inner>(startDestination = Navigation.Inner.MoviesIndex) {
-                composable<Navigation.Inner.MediaIndex> {
-                    MediaIndexList(
-                        showType = true,
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = IndexAdapter.MediaIndexAdapter(navController),
-                        title = { Text("Media") }
-                    )
-                }
-                composable<Navigation.Inner.MoviesIndex> {
-                    MediaIndexList(
-                        showType = false,
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = IndexAdapter.MoviesIndexAdapter(navController),
-                        title = { Text("Movies") }
-                    )
-                }
-                composable<Navigation.Inner.SeriesIndex> {
-                    MediaIndexList(
-                        showType = false,
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = IndexAdapter.SeriesIndexAdapter(navController),
-                        title = { Text("Series") }
-                    )
-                }
-                composable<Navigation.Inner.Watchlist> {
-                    MediaIndexList(
-                        showType = true,
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = IndexAdapter.WatchlistIndexAdapter(navController),
-                        title = { Text("Watchlist") }
-                    )
-                }
-                composable<Navigation.Inner.Statistics> {
-                    StatisticsView(
-                        navController = navController,
-                        drawerState = drawerState
-                    )
-                }
-                composable<Navigation.Inner.MovieDetails> { backStackEntry ->
-                    val movieDetails: Navigation.Inner.MovieDetails = backStackEntry.toRoute()
-
-                    MediaDetailsView(
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = MediaDetailsAdapter.MovieDetailsAdapter(movieDetails.movieId),
-                    )
-                }
-                composable<Navigation.Inner.SeriesDetails> { backStackEntry ->
-                    val seriesDetails: Navigation.Inner.SeriesDetails = backStackEntry.toRoute()
-
-                    MediaDetailsView(
-                        navController = navController,
-                        drawerState = drawerState,
-                        adapter = MediaDetailsAdapter.SeriesDetailsAdapter(seriesDetails.seriesId),
-                    )
-                }
-
-                navigation<Navigation.Inner.Settings>(startDestination = Navigation.Inner.Settings.Profile) {
-                    composable<Navigation.Inner.Settings.Profile> {
-                        SettingsProfileView(
-                            navController = navController,
-                            drawerState = drawerState
-                        )
-                    }
-                    composable<Navigation.Inner.Settings.About> {
-                        SettingsAboutView(
-                            navController = navController,
-                            drawerState = drawerState
-                        )
-                    }
-                    composable<Navigation.Inner.Settings.Users> {
-                        SettingsUsersView(
-                            navController = navController,
-                            drawerState = drawerState
-                        )
-                    }
-                }
             }
         }
     }

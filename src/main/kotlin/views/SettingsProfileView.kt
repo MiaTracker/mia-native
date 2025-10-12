@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import infrastructure.ErrorHandler
 import view_models.SettingsProfileUiState
 import view_models.SettingsProfileViewModel
 
@@ -25,7 +26,12 @@ import view_models.SettingsProfileViewModel
 fun SettingsProfileView(
     navController: NavHostController,
     drawerState: DrawerState,
-    viewModel: SettingsProfileViewModel = viewModel { SettingsProfileViewModel() },
+    errorHandler: ErrorHandler,
+    viewModel: SettingsProfileViewModel = viewModel {
+        SettingsProfileViewModel(
+            errorHandler = errorHandler
+        )
+    },
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val state = uiState

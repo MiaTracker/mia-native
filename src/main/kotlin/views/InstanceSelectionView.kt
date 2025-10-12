@@ -23,7 +23,11 @@ import view_models.InstanceSelectionViewModel
 @Composable
 fun InstanceSelectionView(
     navController: NavHostController,
-    viewModel: InstanceSelectionViewModel = viewModel { InstanceSelectionViewModel(navController) }
+    viewModel: InstanceSelectionViewModel = viewModel {
+        InstanceSelectionViewModel(
+            _navController = navController
+        )
+    }
 ) {
     val vmState by viewModel.uiState.collectAsState()
 

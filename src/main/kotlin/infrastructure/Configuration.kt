@@ -11,15 +11,15 @@ object Configuration {
     val images: ImagesConfiguration
         get() = instance.images
 
-    suspend fun initialize() {
-        val images = when(val res = Api.instance.Configuration().images()) {
-            is Result.Error<*> -> TODO()
-            is Result.Success<ImagesConfiguration> -> res.value
+    suspend fun initialize(errorHandler: ErrorHandler) {
+        when(val res = Api.instance.Configuration().images()) {
+            is Result.Error<*> -> with(errorHandler) { res.handle() }
+            is Result.Success<ImagesConfiguration> -> {
+                _instance = ConfigInstance(
+                    images = res.value
+                )
+            }
         }
-
-        _instance = ConfigInstance(
-            images = images
-        )
     }
 
     data class ConfigInstance(

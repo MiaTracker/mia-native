@@ -6,6 +6,7 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.reflect.*
@@ -44,8 +45,12 @@ object Api {
                         appendPathSegments("ping")
                     }
                 }
+            }.parse<PingResponse>()
+
+            return when(response) {
+                is Result.Error<*> -> false
+                is Result.Success<PingResponse> -> response.value.status == PingStatus.Up
             }
-            return response.status.isSuccess()
         } catch(_: Exception) { return false }
     }
 
@@ -55,75 +60,47 @@ object Api {
                 ?: throw Exception("InstanceUrl not yet set!")
 
         inner class Configuration {
-            suspend fun images(): Result<ImagesConfiguration> {
-                val response = httpClient().use { client ->
+            suspend fun images(): Result<ImagesConfiguration> =
+                httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
                             appendPathSegments("configuration", "images")
                         }
                     }
-                }
-
-                return if(response.status.isSuccess()) {
-                    Result.Success(response.body<ImagesConfiguration>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
+                }.parse()
         }
 
         inner class Users {
-            suspend fun index(): Result<List<UserProfile>> {
-                val response = httpClient().use { client ->
+            suspend fun index(): Result<List<UserProfile>> =
+                httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
                             appendPathSegments("users")
                         }
                     }
-                }
+                }.parse()
 
-                return if(response.status.isSuccess()) {
-                    Result.Success(response.body<List<UserProfile>>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun login(request: LoginRequest): Result<LoginResult> {
-                val response = httpClient().use { client ->
+            suspend fun login(request: LoginRequest): Result<LoginResult> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments("users", "login")
                         }
                         setBody(request)
                     }
-                }
+                }.parse()
 
-                return if(response.status.isSuccess()) {
-                    Result.Success(response.body<LoginResult>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun profile(): Result<UserProfile> {
-                val response = httpClient().use { client ->
+            suspend fun profile(): Result<UserProfile> =
+                httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
                             appendPathSegments("users", "profile")
                         }
                     }
-                }
+                }.parse()
 
-                return if(response.status.isSuccess()) {
-                    Result.Success(response.body<UserProfile>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun changePassword(change: PasswordChange): Result<Unit> {
-                val response = httpClient().use { client ->
+            suspend fun changePassword(change: PasswordChange): Result<Unit> =
+                httpClient().use { client ->
                     client.patch(baseUrl) {
                         url {
                             appendPathSegments("users", "password")
@@ -131,17 +108,10 @@ object Api {
 
                         setBody(change)
                     }
-                }
+                }.parse()
 
-                return if(response.status.isSuccess()) {
-                    Result.Success(Unit)
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun register(user: UserRegister): Result<Unit> {
-                val response = httpClient().use { client ->
+            suspend fun register(user: UserRegister): Result<Unit> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments("users", "register")
@@ -149,30 +119,16 @@ object Api {
 
                         setBody(user)
                     }
-                }
+                }.parse()
 
-                return if(response.status.isSuccess()) {
-                    Result.Success(Unit)
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun delete(uuid: String): Result<Unit> {
-                val response = httpClient().use { client ->
+            suspend fun delete(uuid: String): Result<Unit> =
+                httpClient().use { client ->
                     client.delete(baseUrl) {
                         url {
                             appendPathSegments("users", uuid)
                         }
                     }
-                }
-
-                return if(response.status.isSuccess()) {
-                    Result.Success(Unit)
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
+                }.parse()
         }
 
         inner class Media : BaseMediaApi() {
@@ -200,8 +156,8 @@ object Api {
             override val subpath: String
                 get() = "watchlist"
 
-            suspend fun add(mediaId: Int): Result<Unit> {
-                val response = httpClient().use { client ->
+            suspend fun add(mediaId: Int): Result<Unit> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments(subpath, "add")
@@ -213,17 +169,10 @@ object Api {
                             )
                         )
                     }
-                }
+                }.parse()
 
-                return if (response.status.isSuccess()) {
-                    Result.Success(Unit)
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
-
-            suspend fun remove(mediaId: Int): Result<Unit> {
-                val response = httpClient().use { client ->
+            suspend fun remove(mediaId: Int): Result<Unit> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments(subpath, "remove")
@@ -235,21 +184,15 @@ object Api {
                             )
                         )
                     }
-                }
+                }.parse()
 
-                return if (response.status.isSuccess()) {
-                    Result.Success(Unit)
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
         }
 
         abstract inner class BaseMediaApi {
             protected abstract val subpath: String
 
-            suspend fun index(offset: Int? = null, limit: Int? = null): Result<List<InternalMediaIndex>> {
-                val response = httpClient().use { client ->
+            suspend fun index(offset: Int? = null, limit: Int? = null): Result<List<InternalMediaIndex>> =
+                httpClient().use { client ->
                     client.get(baseUrl) {
                         url {
                             appendPathSegments(subpath)
@@ -261,22 +204,16 @@ object Api {
                             }
                         }
                     }
-                }
+                }.parse()
 
-                return if (response.status.isSuccess()) {
-                    Result.Success(response.body<List<InternalMediaIndex>>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
 
             suspend fun search(
                 query: String,
                 committed: Boolean,
                 offset: Int? = null,
                 limit: Int? = null
-            ): Result<SearchResults> {
-                val response = httpClient().use { client ->
+            ): Result<SearchResults> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments(subpath)
@@ -296,331 +233,206 @@ object Api {
                             )
                         )
                     }
-                }
-
-                return if (response.status.isSuccess()) {
-                    Result.Success(response.body<SearchResults>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
+                }.parse()
         }
 
         abstract inner class BaseMediaInstanceApi<T: MediaDetails> : BaseMediaApi() {
             protected abstract val type: TypeInfo
 
-            suspend fun create(externalId: Int): Result<Int> {
-                val response = httpClient().use { client ->
+            suspend fun create(externalId: Int): Result<Int> =
+                httpClient().use { client ->
                     client.post(baseUrl) {
                         url {
                             appendPathSegments(subpath)
                             parameters.append("tmdb_id", externalId.toString())
                         }
                     }
-                }
+                }.parse()
 
-                return if (response.status.isSuccess()) {
-                    Result.Success(response.body<Int>())
-                } else {
-                    Result.Error(response.body<ApiErrorList>())
-                }
-            }
 
             inner class Id(
                 private val mediaId: Int
             ) {
-                suspend fun get(): Result<T> {
-                    val response = httpClient().use { client ->
+                suspend fun get(): Result<T> =
+                    httpClient().use { client ->
                         client.get(baseUrl) {
                             url {
                                 appendPathSegments(subpath, mediaId.toString())
                             }
                         }
-                    }
+                    }.parse<T>(type)
 
-                    return if(response.status.isSuccess()) {
-                        Result.Success(response.body(type))
-                    } else {
-                        Result.Error(response.body<ApiErrorList>())
-                    }
-                }
 
                 inner class Titles {
 
-                    suspend fun create(title: TitleCreate): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun create(title: TitleCreate): Result<Unit> =
+                        httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "titles")
                                 }
                                 setBody(title)
                             }
-                        }
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
+                        }.parse()
 
                     inner class Id(
                         private val titleId: Int
                     ) {
-
-                        suspend fun primary(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun primary(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.post(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "titles", titleId.toString(), "primary")
                                     }
                                 }
-                            }
+                            }.parse()
 
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
-
-                        suspend fun delete(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun delete(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "titles", titleId.toString())
                                     }
                                 }
-                            }
-
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
+                            }.parse()
                     }
                 }
 
                 inner class Genres {
-                    suspend fun create(genre: GenreCreate): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun create(genre: GenreCreate): Result<Unit> =
+                        httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "genres")
                                 }
                                 setBody(genre)
                             }
-                        }
+                        }.parse()
 
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
 
                     inner class Id(
                         val genreId: Int
                     ) {
-                        suspend fun delete(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun delete(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "genres", genreId.toString())
                                     }
                                 }
-                            }
-
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
+                            }.parse()
                     }
                 }
 
                 inner class Tags {
-                    suspend fun create(tag: TagCreate): Result<Unit> {
-
-                        val response = httpClient().use { client ->
+                    suspend fun create(tag: TagCreate): Result<Unit> =
+                        httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "tags")
                                 }
                                 setBody(tag)
-                            }
+                            }.parse()
                         }
-
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
 
                     inner class Id(
                         val tagId: Int
                     ) {
-                        suspend fun delete(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun delete(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "tags", tagId.toString())
                                     }
                                 }
-                            }
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
+                            }.parse()
                     }
                 }
 
                 inner class Sources {
-                    suspend fun create(source: SourceCreate): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun create(source: SourceCreate): Result<Unit> =
+                        httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "sources")
                                 }
                                 setBody(source)
                             }
-                        }
-
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
+                        }.parse()
 
                     inner class Id(
                         val sourceId: Int
                     ) {
-                        suspend fun update(source: Source): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun update(source: Source): Result<Unit> =
+                            httpClient().use { client ->
                                 client.patch(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "sources", sourceId.toString())
                                     }
                                     setBody(source)
                                 }
-                            }
+                            }.parse()
 
 
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
-
-                        suspend fun delete(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun delete(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "sources", sourceId.toString())
                                     }
                                 }
-                            }
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
+                            }.parse()
                     }
 
                 }
 
                 inner class Logs {
-                    suspend fun create(log: LogCreate): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun create(log: LogCreate): Result<Unit> =
+                        httpClient().use { client ->
                             client.post(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "logs")
                                 }
                                 setBody(log)
                             }
-                        }
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
+                        }.parse()
 
                     inner class Id(
                         val logId: Int
                     ) {
-                        suspend fun update(log: Log): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun update(log: Log): Result<Unit> =
+                            httpClient().use { client ->
                                 client.patch(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "logs", logId.toString())
                                     }
                                     setBody(log)
                                 }
-                            }
+                            }.parse()
 
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
-
-                        suspend fun delete(): Result<Unit> {
-                            val response = httpClient().use { client ->
+                        suspend fun delete(): Result<Unit> =
+                            httpClient().use { client ->
                                 client.delete(baseUrl) {
                                     url {
                                         appendPathSegments(subpath, mediaId.toString(), "logs", logId.toString())
                                     }
                                 }
-                            }
-
-                            return if(response.status.isSuccess()) {
-                                Result.Success(Unit)
-                            } else {
-                                Result.Error(response.body<ApiErrorList>())
-                            }
-                        }
+                            }.parse()
                     }
                 }
 
                 inner class Backdrops {
-                    suspend fun index(): Result<List<MediaImage>> {
-                        val response = httpClient().use { client ->
+                    suspend fun index(): Result<List<MediaImage>> =
+                        httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "backdrops")
                                 }
                             }
-                        }
+                        }.parse()
 
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(response.body<List<MediaImage>>())
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
-
-                    suspend fun default(path: String): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun default(path: String): Result<Unit> =
+                        httpClient().use { client ->
                             client.patch(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "backdrops", "default")
@@ -632,35 +444,22 @@ object Api {
                                     )
                                 )
                             }
-                        }
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
+                        }.parse()
                 }
 
                 inner class Posters {
-                    suspend fun index(): Result<List<MediaImage>> {
-                        val response = httpClient().use { client ->
+                    suspend fun index(): Result<List<MediaImage>> =
+                        httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "posters")
                                 }
                             }
-                        }
+                        }.parse()
 
-                        return if(response.status.isSuccess()) {
-                            Result.Success(response.body<List<MediaImage>>())
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
 
-                    suspend fun default(path: String): Result<Unit> {
-                        val response = httpClient().use { client ->
+                    suspend fun default(path: String): Result<Unit> =
+                        httpClient().use { client ->
                             client.patch(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "posters", "default")
@@ -672,32 +471,44 @@ object Api {
                                     )
                                 )
                             }
-                        }
-
-                        return if(response.status.isSuccess()) {
-                            Result.Success(Unit)
-                        } else {
-                            Result.Error(response.body<ApiErrorList>())
-                        }
-                    }
+                        }.parse()
                 }
             }
         }
 
-        suspend fun statistics(): Result<Stats> {
-            val response = httpClient().use { client ->
+        suspend fun statistics(): Result<Stats> =
+            httpClient().use { client ->
                 client.get(baseUrl) {
                     url {
                         appendPathSegments("statistics")
                     }
                 }
-            }
+            }.parse()
+    }
+}
 
-            return if(response.status.isSuccess()) {
-                Result.Success(response.body<Stats>())
-            } else {
-                Result.Error(response.body<ApiErrorList>())
+suspend inline fun<reified T> HttpResponse.parse(): Result<T> = parse(typeInfo<T>())
+
+suspend inline fun<T> HttpResponse.parse(type: TypeInfo): Result<T> {
+    try {
+        return if(this.status.isSuccess()) {
+            if(type == Unit::class) {
+                @Suppress("UNCHECKED_CAST")
+                Result.Success(Unit as T)
             }
+            else {
+                Result.Success(this.body<T>(type))
+            }
+        } else {
+            Result.Error(
+                Errors.ApiErrors(
+                    status = this.status,
+                    apiErrors = this.body<ApiErrorList>()
+                )
+            )
         }
+    } catch (ex: Exception) {
+        println("Exception parsing response: " + ex.message)
+        return Result.Error(Errors.CaughtException(ex))
     }
 }

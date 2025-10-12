@@ -34,6 +34,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import components.*
 import data_objects.MediaDetails
+import infrastructure.ErrorHandler
 import infrastructure.ImageSizeInterceptor
 import view_models.ImageSelectionUiState
 import view_models.MediaDetailsAdapter
@@ -45,9 +46,13 @@ import view_models.MediaDetailsViewModel
 fun<T: MediaDetails> MediaDetailsView(
     navController: NavHostController,
     drawerState: DrawerState,
+    errorHandler: ErrorHandler,
     adapter: MediaDetailsAdapter<T>,
     viewModel: MediaDetailsViewModel<T> = viewModel {
-        MediaDetailsViewModel(adapter)
+        MediaDetailsViewModel(
+            adapter = adapter,
+            errorHandler = errorHandler
+        )
     }
 ) {
     val uiState by viewModel.uiState.collectAsState()

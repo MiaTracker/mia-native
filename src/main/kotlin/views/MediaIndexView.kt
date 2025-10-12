@@ -40,6 +40,7 @@ import data_objects.InternalMediaIndex
 import data_objects.MediaIndex
 import enums.MediaType
 import helpers.toStarsString
+import infrastructure.ErrorHandler
 import infrastructure.ImageSizeInterceptor
 import view_models.IndexAdapter
 import view_models.MediaIndexUiState
@@ -51,9 +52,15 @@ fun MediaIndexList(
     showType: Boolean,
     navController: NavHostController,
     drawerState: DrawerState,
+    errorHandler: ErrorHandler,
     adapter: IndexAdapter,
     title: @Composable () -> Unit,
-    viewModel: MediaIndexViewModel = viewModel { MediaIndexViewModel(adapter) }
+    viewModel: MediaIndexViewModel = viewModel {
+        MediaIndexViewModel(
+            adapter = adapter,
+            errorHandler = errorHandler
+        )
+    }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

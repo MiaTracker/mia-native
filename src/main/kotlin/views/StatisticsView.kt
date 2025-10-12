@@ -19,6 +19,7 @@ import components.Scrollable
 import data_objects.CategoryStats
 import data_objects.InternalMediaIndex
 import data_objects.Stats
+import infrastructure.ErrorHandler
 import infrastructure.generatePalette
 import ir.ehsannarmani.compose_charts.PieChart
 import ir.ehsannarmani.compose_charts.models.Pie
@@ -29,7 +30,13 @@ import view_models.StatisticsViewModel
 fun StatisticsView(
     navController: NavHostController,
     drawerState: DrawerState,
-    viewModel: StatisticsViewModel = viewModel { StatisticsViewModel(navController) },
+    errorHandler: ErrorHandler,
+    viewModel: StatisticsViewModel = viewModel {
+        StatisticsViewModel(
+            navController = navController,
+            errorHandler = errorHandler
+        )
+   }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

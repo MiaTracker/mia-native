@@ -10,6 +10,7 @@ import data_objects.InternalMediaIndex
 import data_objects.Result
 import data_objects.SearchResults
 import enums.MediaType
+import infrastructure.ErrorHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,7 +84,10 @@ sealed interface IndexAdapter {
     }
 }
 
-class MediaIndexViewModel(private val adapter: IndexAdapter) : ViewModel() {
+class MediaIndexViewModel(
+    private val errorHandler: ErrorHandler,
+    private val adapter: IndexAdapter
+) : ViewModel() {
     private val _uiState: MutableStateFlow<MediaIndexUiState> = MutableStateFlow(MediaIndexUiState.Loading())
     val uiState: StateFlow<MediaIndexUiState> = _uiState.asStateFlow()
 
@@ -121,7 +125,7 @@ class MediaIndexViewModel(private val adapter: IndexAdapter) : ViewModel() {
         viewModelScope.launch {
             val result = adapter.create(externalId = index.externalId, type = index.type)
             when (result) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<Int> -> {
                     adapter.navigateTo(id = result.value, type = index.type)
                     load()
@@ -146,7 +150,7 @@ class MediaIndexViewModel(private val adapter: IndexAdapter) : ViewModel() {
             if(state.searchQuery.isEmpty()) {
                 val result = adapter.index()
                 when (result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<List<InternalMediaIndex>> -> {
                         _uiState.value = MediaIndexUiState.Loaded(
                             internal = result.value,
@@ -163,7 +167,7 @@ class MediaIndexViewModel(private val adapter: IndexAdapter) : ViewModel() {
                     commited = state.searchQueryCommited
                 )
                 when (result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<SearchResults> -> {
                         _uiState.value = MediaIndexUiState.Loaded(
                             internal = result.value.indexes,

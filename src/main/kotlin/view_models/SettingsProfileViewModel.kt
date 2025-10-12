@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import data_objects.PasswordChange
 import data_objects.Result
 import data_objects.UserProfile
+import infrastructure.ErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,14 +32,16 @@ sealed interface SettingsProfileUiState {
     }
 }
 
-class SettingsProfileViewModel : ViewModel() {
+class SettingsProfileViewModel(
+    private val errorHandler: ErrorHandler
+) : ViewModel() {
     private val _uiState: MutableStateFlow<SettingsProfileUiState> = MutableStateFlow(SettingsProfileUiState.Loading)
     val uiState: StateFlow<SettingsProfileUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = Api.instance.Users().profile()) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<UserProfile> -> {
                     _uiState.value = SettingsProfileUiState.Loaded(
                         profile = result.value
@@ -126,7 +129,7 @@ class SettingsProfileViewModel : ViewModel() {
             )
 
             when(result) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<*> -> {
                     _uiState.value = state.copy(
                         changePasswordDialogState = null

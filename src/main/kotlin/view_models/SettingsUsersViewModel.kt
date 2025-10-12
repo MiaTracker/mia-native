@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import data_objects.Result
 import data_objects.UserProfile
 import data_objects.UserRegister
+import infrastructure.ErrorHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +31,9 @@ sealed interface SettingsUsersUiState {
     }
 }
 
-class SettingsUsersViewModel : ViewModel() {
+class SettingsUsersViewModel(
+    private val errorHandler: ErrorHandler
+) : ViewModel() {
     private val _uiState: MutableStateFlow<SettingsUsersUiState> = MutableStateFlow(SettingsUsersUiState.Loading)
     val uiState: StateFlow<SettingsUsersUiState> = _uiState.asStateFlow()
 
@@ -43,7 +46,7 @@ class SettingsUsersViewModel : ViewModel() {
             val result = Api.instance.Users().delete(user.uuid)
 
             when(result) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<Unit> -> {
                     load()
                 }
@@ -115,7 +118,7 @@ class SettingsUsersViewModel : ViewModel() {
             )
 
             when(result) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<*> -> {
                     load()
                     closeUserRegistrationDialog()
@@ -129,7 +132,7 @@ class SettingsUsersViewModel : ViewModel() {
             val result = Api.instance.Users().index()
 
             when(result) {
-                is Result.Error<*> -> TODO()
+                is Result.Error<*> -> with(errorHandler) { result.handle() }
                 is Result.Success<List<UserProfile>> -> {
                     _uiState.value = SettingsUsersUiState.Loaded(
                         users = result.value

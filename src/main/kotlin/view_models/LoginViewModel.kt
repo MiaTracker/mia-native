@@ -5,11 +5,14 @@ import Navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import data_objects.Errors
 import data_objects.LoginRequest
 import data_objects.LoginResult
 import data_objects.Result
 import infrastructure.Configuration
+import infrastructure.ErrorHandler
 import infrastructure.Preferences
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +30,8 @@ sealed interface LoginUiState {
 }
 
 class LoginViewModel(
-    val navController: NavHostController
+    val navController: NavHostController,
+    private val errorHandler: ErrorHandler
 ) : ViewModel() {
 
     private val _uiState: MutableStateFlow<LoginUiState> = MutableStateFlow(LoginUiState.Loading)
@@ -36,7 +40,7 @@ class LoginViewModel(
     init {
         if(Preferences.Authorization.token != null) {
             viewModelScope.launch {
-                Configuration.initialize()
+                Configuration.initialize(errorHandler)
                 viewModelScope.launch(Dispatchers.Main) {
                     navController.navigate(Navigation.Inner.MediaIndex)
                 }
@@ -86,12 +90,14 @@ class LoginViewModel(
 
             when (result) {
                 is Result.Error<*> -> {
-                    //TODO
                     _uiState.value = state.copy(isLoginIncorrect = true, loggingIn = false)
+                    if(result.errors !is Errors.ApiErrors || result.errors.status != HttpStatusCode.Unauthorized) {
+                        with(errorHandler) { result.handle() }
+                    }
                 }
                 is Result.Success<LoginResult> -> {
                     Preferences.Authorization.assign(result.value)
-                    Configuration.initialize()
+                    Configuration.initialize(errorHandler)
                     viewModelScope.launch(Dispatchers.Main) {
                         navController.navigate(Navigation.Inner.MediaIndex)
                     }

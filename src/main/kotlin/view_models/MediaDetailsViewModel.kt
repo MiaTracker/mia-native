@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data_objects.*
 import enums.SourceType
+import infrastructure.ErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,6 +106,7 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
 }
 
 class MediaDetailsViewModel<T: MediaDetails>(
+    private val errorHandler: ErrorHandler,
     private val adapter: MediaDetailsAdapter<T>
 ) : ViewModel() {
     private val _uiState: MutableStateFlow<MediaDetailsUiState<T>> = MutableStateFlow(MediaDetailsUiState.Loading())
@@ -124,7 +126,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
         val result = adapter.get()
 
         when(result) {
-            is Result.Error<*> -> TODO()
+            is Result.Error<*> -> with(errorHandler) { result.handle() }
             is Result.Success<T> -> {
                 _uiState.value = MediaDetailsUiState.Loaded(result.value)
             }
@@ -141,7 +143,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = getImagesApi()
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<List<MediaImage>> -> {
                         val state = _uiState.value
                         if(state !is MediaDetailsUiState.Loaded) return@launch
@@ -163,7 +165,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                     val result = setDefaultImageApi(backdrop.filePath)
 
                     when(result) {
-                        is Result.Error<*> -> TODO()
+                        is Result.Error<*> -> with(errorHandler) { result.handle() }
                         is Result.Success<*> -> {
                             refresh()
                             closeImageSelection()
@@ -204,7 +206,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<Unit> -> {
                         refresh()
                     }
@@ -217,7 +219,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.setPrimaryTitle(title.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<Unit> -> {
                         refresh()
                     }
@@ -230,7 +232,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.deleteTitle(title.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -247,7 +249,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<Unit> -> {
                         refresh()
                     }
@@ -260,7 +262,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.deleteGenre(genre.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -277,7 +279,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<Unit> -> {
                         refresh()
                     }
@@ -290,7 +292,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.deleteTag(tag.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -305,7 +307,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.addToWatchlist()
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -318,7 +320,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.removeFromWatchlist()
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -340,7 +342,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -356,7 +358,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -370,7 +372,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.deleteSource(source.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -401,7 +403,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 )
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -415,7 +417,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.updateLog(log = log)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }
@@ -428,7 +430,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                 val result = adapter.deleteLog(log.id)
 
                 when(result) {
-                    is Result.Error<*> -> TODO()
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
                     is Result.Success<*> -> {
                         refresh()
                     }

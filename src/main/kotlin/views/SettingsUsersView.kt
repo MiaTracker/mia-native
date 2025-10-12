@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import infrastructure.ErrorHandler
 import view_models.SettingsUsersUiState
 import view_models.SettingsUsersViewModel
 
@@ -50,7 +51,12 @@ import view_models.SettingsUsersViewModel
 fun SettingsUsersView(
     navController: NavHostController,
     drawerState: DrawerState,
-    viewModel: SettingsUsersViewModel = viewModel { SettingsUsersViewModel() }
+    errorHandler: ErrorHandler,
+    viewModel: SettingsUsersViewModel = viewModel {
+        SettingsUsersViewModel(
+            errorHandler = errorHandler
+        )
+    }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
