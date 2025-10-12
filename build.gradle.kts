@@ -54,5 +54,9 @@ compose.desktop {
             packageName = "mia_native"
             packageVersion = "1.0.0"
         }
+
+        buildTypes.release.proguard {
+            isEnabled = false
+        }
     }
 }
