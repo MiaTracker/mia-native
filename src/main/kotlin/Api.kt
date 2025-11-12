@@ -28,6 +28,12 @@ object Api {
                 )
             }
 
+            install(HttpTimeout) {
+                requestTimeoutMillis = 60000
+                connectTimeoutMillis = 5000
+                socketTimeoutMillis = 60000
+            }
+
             defaultRequest {
                 contentType(ContentType.Application.Json)
 
@@ -58,17 +64,6 @@ object Api {
         private val baseUrl: String
             get() = Preferences.instanceUrl
                 ?: throw Exception("InstanceUrl not yet set!")
-
-        inner class Configuration {
-            suspend fun images(): Result<ImagesConfiguration> =
-                httpClient().use { client ->
-                    client.get(baseUrl) {
-                        url {
-                            appendPathSegments("configuration", "images")
-                        }
-                    }
-                }.parse()
-        }
 
         inner class Users {
             suspend fun index(): Result<List<UserProfile>> =
@@ -422,7 +417,7 @@ object Api {
                 }
 
                 inner class Backdrops {
-                    suspend fun index(): Result<List<MediaImage>> =
+                    suspend fun index(): Result<List<ImageCandidate>> =
                         httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
@@ -431,24 +426,20 @@ object Api {
                             }
                         }.parse()
 
-                    suspend fun default(path: String): Result<Unit> =
+                    suspend fun default(backdrop: BackdropUpdate): Result<Unit> =
                         httpClient().use { client ->
                             client.patch(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "backdrops", "default")
                                 }
 
-                                setBody(
-                                    BackdropUpdate(
-                                        path = path
-                                    )
-                                )
+                                setBody(backdrop)
                             }
                         }.parse()
                 }
 
                 inner class Posters {
-                    suspend fun index(): Result<List<MediaImage>> =
+                    suspend fun index(): Result<List<ImageCandidate>> =
                         httpClient().use { client ->
                             client.get(baseUrl) {
                                 url {
@@ -458,18 +449,14 @@ object Api {
                         }.parse()
 
 
-                    suspend fun default(path: String): Result<Unit> =
+                    suspend fun default(poster: PosterUpdate): Result<Unit> =
                         httpClient().use { client ->
                             client.patch(baseUrl) {
                                 url {
                                     appendPathSegments(subpath, mediaId.toString(), "posters", "default")
                                 }
 
-                                setBody(
-                                    PosterUpdate(
-                                        path = path
-                                    )
-                                )
+                                setBody(poster)
                             }
                         }.parse()
                 }

@@ -19,16 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil3.SingletonImageLoader
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
 import data_objects.*
 import enums.SourceType
 import helpers.toStarsString
-import infrastructure.ImageSizeInterceptor
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -37,7 +31,7 @@ import view_models.MediaDetailsViewModel
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Backdrop(
-    backdropPath: String?,
+    backdrop: Image?,
     onEdit: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -50,21 +44,8 @@ fun Backdrop(
             .height(500.dp)
             .hoverable(interactionSource)
     ) {
-        AsyncImage(
-            imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-                .components {
-                    add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
-                }
-                .build(),
-            model = ImageRequest.Builder(LocalPlatformContext.current)
-                .data(backdropPath!!) //TODO
-                .error {
-                    null
-                }
-                //TODO: fallback and err
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        ApiImage(
+            image = backdrop,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -89,7 +70,7 @@ fun Backdrop(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Poster(
-    posterPath: String?,
+    poster: Image?,
     onEdit: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -102,24 +83,10 @@ fun Poster(
             .height(450.dp)
             .hoverable(interactionSource)
     ) {
-        AsyncImage(
-            imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-                .components {
-                    add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
-                }
-                .build(),
-            model = ImageRequest.Builder(LocalPlatformContext.current)
-                .data(posterPath!!)
-                .error {
-                    null
-                }
-                //TODO: fallback and err
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        ApiImage(
+            image = poster,
             modifier = Modifier.fillMaxSize()
         )
-
 
         if(isHovered) {
             Box(

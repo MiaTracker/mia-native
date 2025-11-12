@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 
 sealed interface MediaDetails {
     val id: Int
-    val posterPath: String?
-    val backdropPath: String?
+    val poster: Image?
+    val backdrop: Image?
     val stars: Float?
     val title: String
     val alternativeTitles: List<AlternativeTitle>
@@ -19,13 +19,14 @@ sealed interface MediaDetails {
     val tags: List<Tag>
     val sources: List<Source>
     val logs: List<Log>
+    val locks: List<String>
 }
 
 @Serializable
 data class MovieDetails(
     override val id: Int,
-    override val posterPath: String?,
-    override val backdropPath: String?,
+    override val poster: Image?,
+    override val backdrop: Image?,
     override val stars: Float?,
     override val title: String,
     override val alternativeTitles: List<AlternativeTitle>,
@@ -39,14 +40,15 @@ data class MovieDetails(
     override val genres: List<Genre>,
     override val tags: List<Tag>,
     override val sources: List<Source>,
-    override val logs: List<Log>
+    override val logs: List<Log>,
+    override val locks: List<String>,
 ) : MediaDetails
 
 @Serializable
 data class SeriesDetails(
     override val id: Int,
-    override val posterPath: String?,
-    override val backdropPath: String?,
+    override val poster: Image?,
+    override val backdrop: Image?,
     override val stars: Float?,
     override val title: String,
     override val alternativeTitles: List<AlternativeTitle>,
@@ -62,5 +64,6 @@ data class SeriesDetails(
     override val genres: List<Genre>,
     override val tags: List<Tag>,
     override val sources: List<Source>,
-    override val logs: List<Log>
+    override val logs: List<Log>,
+    override val locks: List<String>,
 ) : MediaDetails

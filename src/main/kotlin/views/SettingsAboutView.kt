@@ -9,19 +9,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import components.TmdbLogoLongIcon
 import org.jetbrains.compose.resources.painterResource
 import org.nara.mia_native.generated.resources.Res
 import org.nara.mia_native.generated.resources.logo
-import org.nara.mia_native.generated.resources.tmdbLogoLong
 
 @Composable
 fun SettingsAboutView(
@@ -77,24 +72,7 @@ fun SettingsAboutView(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
             ) {
-                Image(
-                    painter = painterResource(Res.drawable.tmdbLogoLong),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .width(100.dp)
-                        .graphicsLayer(alpha = 0.99f)
-                        .drawWithContent {
-                            drawContent()
-                            drawRect(
-                                brush = Brush.horizontalGradient(
-                                    Pair(0f, Color(0xFF90CEA1)),
-                                    Pair(0.56f, Color(0xFF3CBEC9)),
-                                    Pair(1f, Color(0xFF00B3E5))
-                                ),
-                                blendMode = BlendMode.SrcAtop
-                            )
-                        }
-                )
+                TmdbLogoLongIcon(modifier = Modifier.width(100.dp))
                 Text(
                     text = "This product uses the TMDB API but is not endorsed or certified by TMDB."
                 )

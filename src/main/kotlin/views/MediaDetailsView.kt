@@ -23,19 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import coil3.SingletonImageLoader
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
 import components.*
+import data_objects.ImageSource
 import data_objects.MediaDetails
 import infrastructure.ErrorHandler
-import infrastructure.ImageSizeInterceptor
 import view_models.ImageSelectionUiState
 import view_models.MediaDetailsAdapter
 import view_models.MediaDetailsUiState
@@ -97,7 +92,7 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Backdrop(
-                        backdropPath = details.backdropPath,
+                        backdrop = details.backdrop,
                         onEdit = { viewModel.Backdrops().openImageSelection() }
                     )
                     TitlePanel(
@@ -110,7 +105,7 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
             },
             poster = {
                 Poster(
-                    posterPath = details.posterPath,
+                    poster = details.poster,
                     onEdit = { viewModel.Posters().openImageSelection() }
                 )
             },
@@ -189,27 +184,32 @@ fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewMode
                                 }
                                 .pointerHoverIcon(PointerIcon.Hand)
                         ) {
-                            AsyncImage(
-                                imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-                                    .components {
-                                        add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
-                                    }
-                                    .build(),
-                                model = ImageRequest.Builder(LocalPlatformContext.current)
-                                    .data(image.filePath)
-                                    .error {
-                                        null
-                                    }
-                                    //TODO: fallback and err
-                                    .build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
+                            Box(
                                 modifier = Modifier
                                     .height(imageSize.height)
                                     .fillMaxWidth()
-                            )
+                            ) {
+                                ApiImage(
+                                    image = image,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                )
+
+                                when(image.source) {
+                                    ImageSource.Internal -> {}
+                                    ImageSource.TMDB -> {
+                                        TmdbLogoIcon(
+                                            modifier = Modifier
+                                                .width(50.dp)
+                                                .padding(10.dp)
+                                                .align(Alignment.TopEnd)
+                                        )
+                                    }
+                                }
+                            }
+
                             Text(
-                                text = "${image.width}x${image.height}",
+                                text = "${image.originalWidth}x${image.originalHeight}",
                             )
 
                             if(image.language != null) {

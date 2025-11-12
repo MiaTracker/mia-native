@@ -15,15 +15,15 @@ import kotlinx.datetime.LocalDate
 
 sealed interface ImageSelectionUiState {
     sealed interface LoadedImageSelectionUiState : ImageSelectionUiState {
-        val images: List<MediaImage>
+        val images: List<ImageCandidate>
     }
 
     object Loading: ImageSelectionUiState
     data class BackdropSelection(
-        override val images: List<MediaImage>
+        override val images: List<ImageCandidate>
     ) : LoadedImageSelectionUiState
     data class PosterSelection(
-        override val images: List<MediaImage>
+        override val images: List<ImageCandidate>
     ) : LoadedImageSelectionUiState
 }
 
@@ -53,10 +53,10 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
     suspend fun createLog(log: LogCreate): Result<Unit>
     suspend fun updateLog(log: Log): Result<Unit>
     suspend fun deleteLog(logId: Int): Result<Unit>
-    suspend fun getBackdrops(): Result<List<MediaImage>>
-    suspend fun setDefaultBackdrop(path: String): Result<Unit>
-    suspend fun getPosters(): Result<List<MediaImage>>
-    suspend fun setDefaultPoster(path: String): Result<Unit>
+    suspend fun getBackdrops(): Result<List<ImageCandidate>>
+    suspend fun setDefaultBackdrop(backdrop: BackdropUpdate): Result<Unit>
+    suspend fun getPosters(): Result<List<ImageCandidate>>
+    suspend fun setDefaultPoster(poster: PosterUpdate): Result<Unit>
 
     class MovieDetailsAdapter(private val id: Int) : MediaDetailsAdapter<MovieDetails> {
         override suspend fun get() = Api.instance.Movies().Id(id).get()
@@ -75,10 +75,10 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Movies().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Movies().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Movies().Id(id).Logs().Id(logId).delete()
-        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Backdrops().index()
-        override suspend fun setDefaultBackdrop(path: String): Result<Unit> = Api.instance.Movies().Id(id).Backdrops().default(path)
-        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Movies().Id(id).Posters().index()
-        override suspend fun setDefaultPoster(path: String): Result<Unit> = Api.instance.Movies().Id(id).Posters().default(path)
+        override suspend fun getBackdrops(): Result<List<ImageCandidate>> = Api.instance.Movies().Id(id).Backdrops().index()
+        override suspend fun setDefaultBackdrop(backdrop: BackdropUpdate): Result<Unit> = Api.instance.Movies().Id(id).Backdrops().default(backdrop)
+        override suspend fun getPosters(): Result<List<ImageCandidate>> = Api.instance.Movies().Id(id).Posters().index()
+        override suspend fun setDefaultPoster(poster: PosterUpdate): Result<Unit> = Api.instance.Movies().Id(id).Posters().default(poster)
     }
 
     class SeriesDetailsAdapter(private val id: Int) : MediaDetailsAdapter<SeriesDetails> {
@@ -98,10 +98,10 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
         override suspend fun createLog(log: LogCreate) = Api.instance.Series().Id(id).Logs().create(log)
         override suspend fun updateLog(log: Log) = Api.instance.Series().Id(id).Logs().Id(log.id).update(log)
         override suspend fun deleteLog(logId: Int) = Api.instance.Series().Id(id).Logs().Id(logId).delete()
-        override suspend fun getBackdrops(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Backdrops().index()
-        override suspend fun setDefaultBackdrop(path: String): Result<Unit> = Api.instance.Series().Id(id).Backdrops().default(path)
-        override suspend fun getPosters(): Result<List<MediaImage>> = Api.instance.Series().Id(id).Posters().index()
-        override suspend fun setDefaultPoster(path: String): Result<Unit> = Api.instance.Series().Id(id).Posters().default(path)
+        override suspend fun getBackdrops(): Result<List<ImageCandidate>> = Api.instance.Series().Id(id).Backdrops().index()
+        override suspend fun setDefaultBackdrop(backdrop: BackdropUpdate): Result<Unit> = Api.instance.Series().Id(id).Backdrops().default(backdrop)
+        override suspend fun getPosters(): Result<List<ImageCandidate>> = Api.instance.Series().Id(id).Posters().index()
+        override suspend fun setDefaultPoster(poster: PosterUpdate): Result<Unit> = Api.instance.Series().Id(id).Posters().default(poster)
     }
 }
 
@@ -144,7 +144,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
 
                 when(result) {
                     is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<List<MediaImage>> -> {
+                    is Result.Success<List<ImageCandidate>> -> {
                         val state = _uiState.value
                         if(state !is MediaDetailsUiState.Loaded) return@launch
                         _uiState.value = state.copy(imageSelectionState = createState(result.value))
@@ -159,10 +159,10 @@ class MediaDetailsViewModel<T: MediaDetails>(
             _uiState.value = state.copy(imageSelectionState = null)
         }
 
-        fun setImage(backdrop: MediaImage) {
+        fun setImage(backdrop: ImageCandidate) {
             if(!backdrop.current) {
                 viewModelScope.launch(Dispatchers.IO) {
-                    val result = setDefaultImageApi(backdrop.filePath)
+                    val result = setDefaultImageApi(backdrop)
 
                     when(result) {
                         is Result.Error<*> -> with(errorHandler) { result.handle() }
@@ -178,22 +178,32 @@ class MediaDetailsViewModel<T: MediaDetails>(
             }
         }
 
-        protected abstract suspend fun getImagesApi(): Result<List<MediaImage>>
-        protected abstract suspend fun setDefaultImageApi(path: String): Result<Unit>
-        protected abstract fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState
+        protected abstract suspend fun getImagesApi(): Result<List<ImageCandidate>>
+        protected abstract suspend fun setDefaultImageApi(candidate: ImageCandidate): Result<Unit>
+        protected abstract fun createState(images: List<ImageCandidate>): ImageSelectionUiState.LoadedImageSelectionUiState
     }
 
     inner class Backdrops : ImageSelection() {
-        override suspend fun getImagesApi(): Result<List<MediaImage>> = adapter.getBackdrops()
-        override suspend fun setDefaultImageApi(path: String): Result<Unit> = adapter.setDefaultBackdrop(path)
-        override fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState =
+        override suspend fun getImagesApi(): Result<List<ImageCandidate>> = adapter.getBackdrops()
+        override suspend fun setDefaultImageApi(candidate: ImageCandidate): Result<Unit> = adapter.setDefaultBackdrop(
+            BackdropUpdate(
+                path = candidate.path,
+                source = candidate.source
+            )
+        )
+        override fun createState(images: List<ImageCandidate>): ImageSelectionUiState.LoadedImageSelectionUiState =
             ImageSelectionUiState.BackdropSelection(images)
     }
 
     inner class Posters : ImageSelection() {
-        override suspend fun getImagesApi(): Result<List<MediaImage>> = adapter.getPosters()
-        override suspend fun setDefaultImageApi(path: String): Result<Unit> = adapter.setDefaultPoster(path)
-        override fun createState(images: List<MediaImage>): ImageSelectionUiState.LoadedImageSelectionUiState =
+        override suspend fun getImagesApi(): Result<List<ImageCandidate>> = adapter.getPosters()
+        override suspend fun setDefaultImageApi(candidate: ImageCandidate): Result<Unit> = adapter.setDefaultPoster(
+            PosterUpdate(
+                path = candidate.path,
+                source = candidate.source
+            )
+        )
+        override fun createState(images: List<ImageCandidate>): ImageSelectionUiState.LoadedImageSelectionUiState =
             ImageSelectionUiState.PosterSelection(images)
     }
 

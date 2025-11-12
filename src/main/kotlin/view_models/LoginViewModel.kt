@@ -9,10 +9,9 @@ import data_objects.Errors
 import data_objects.LoginRequest
 import data_objects.LoginResult
 import data_objects.Result
-import infrastructure.Configuration
 import infrastructure.ErrorHandler
 import infrastructure.Preferences
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,11 +38,8 @@ class LoginViewModel(
 
     init {
         if(Preferences.Authorization.token != null) {
-            viewModelScope.launch {
-                Configuration.initialize(errorHandler)
-                viewModelScope.launch(Dispatchers.Main) {
-                    navController.navigate(Navigation.Inner.MediaIndex)
-                }
+            viewModelScope.launch(Dispatchers.Main) {
+                navController.navigate(Navigation.Inner.MediaIndex)
             }
         }
         else _uiState.value = LoginUiState.Loaded()
@@ -97,7 +93,6 @@ class LoginViewModel(
                 }
                 is Result.Success<LoginResult> -> {
                     Preferences.Authorization.assign(result.value)
-                    Configuration.initialize(errorHandler)
                     viewModelScope.launch(Dispatchers.Main) {
                         navController.navigate(Navigation.Inner.MediaIndex)
                     }

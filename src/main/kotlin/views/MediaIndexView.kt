@@ -3,14 +3,16 @@ package views
 import InnerNavigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.onClick
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,15 +26,11 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import coil3.SingletonImageLoader
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
+import components.ApiImage
 import components.LazyFlowRow
 import components.SearchBar
 import data_objects.ExternalMediaIndex
@@ -41,7 +39,6 @@ import data_objects.MediaIndex
 import enums.MediaType
 import helpers.toStarsString
 import infrastructure.ErrorHandler
-import infrastructure.ImageSizeInterceptor
 import view_models.IndexAdapter
 import view_models.MediaIndexUiState
 import view_models.MediaIndexViewModel
@@ -159,47 +156,11 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, onClick: () -> Unit, mo
                 } else it
             }
     ) {
-        val path = media.posterPath
-
-        if(path != null) {
-            AsyncImage(
-                imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-                    .components {
-                        add(ImageSizeInterceptor(ImageSizeInterceptor.ImageType.Poster))
-                    }
-                    .build(),
-                model = ImageRequest.Builder(LocalPlatformContext.current)
-                    .data(path)
-                    .error {
-                        null
-                    }
-                    //TODO: fallback and err
-                    .build(),
-                contentDescription = media.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.HideImage,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(32.dp)
-                )
-            }
-        }
-
+        ApiImage(
+            image = media.poster,
+            modifier = Modifier
+                .fillMaxSize()
+        )
 
         if(hovered) {
             Box(
