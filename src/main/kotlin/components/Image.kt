@@ -9,6 +9,9 @@ import androidx.compose.material.icons.filled.HideImage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -56,11 +59,23 @@ private fun TmdbGradientIcon(resource: DrawableResource, modifier: Modifier) = I
 )
 
 @Composable
-fun ApiImage(image: ApiImage?, modifier: Modifier = Modifier) =
-    if(image != null) {
+fun ApiImage(image: ApiImage?, modifier: Modifier = Modifier) {
+    var loadFailed by mutableStateOf(false)
+
+    if(image != null && !loadFailed) {
         AsyncImage(
-            imageLoader = ApiImageLoader(),
-            model = ApiImageModel(image),
+            imageLoader = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
+                .components {
+                    add(ImageSizeInterceptor())
+                }
+                .build(),
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(image)
+                .error {
+                    loadFailed = true
+                    null
+                }
+                .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = modifier
@@ -83,20 +98,4 @@ fun ApiImage(image: ApiImage?, modifier: Modifier = Modifier) =
             )
         }
     }
-
-@Composable
-private fun ApiImageLoader() = SingletonImageLoader.get(LocalPlatformContext.current).newBuilder()
-    .components {
-        add(ImageSizeInterceptor())
-    }
-    .build()
-
-@Composable
-private fun ApiImageModel(image: ApiImage) =
-    ImageRequest.Builder(LocalPlatformContext.current)
-        .data(image)
-        .error {
-            null
-        }
-        //TODO: fallback and err
-        .build()
+}
