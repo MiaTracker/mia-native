@@ -12,6 +12,7 @@ sealed interface MediaDetails {
     val alternativeTitles: List<AlternativeTitle>
     val status: String?
     val overview: String?
+    val tmdbId: Int?
     val tmdbVoteAverage: Float?
     val onWatchlist: Boolean
     val originalLanguage: Language?
@@ -34,6 +35,7 @@ data class MovieDetails(
     val runtime: Int?,
     override val status: String?,
     override val overview: String?,
+    override val tmdbId: Int?,
     override val tmdbVoteAverage: Float?,
     override val onWatchlist: Boolean,
     override val originalLanguage: Language?,
@@ -58,6 +60,7 @@ data class SeriesDetails(
     override val status: String?,
     val type: String?,
     override val overview: String?,
+    override val tmdbId: Int?,
     override val tmdbVoteAverage: Float?,
     override val onWatchlist: Boolean,
     override val originalLanguage: Language?,

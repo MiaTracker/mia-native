@@ -2,11 +2,13 @@ package components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,10 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import data_objects.*
 import enums.SourceType
 import helpers.toStarsString
+import io.ktor.http.appendPathSegments
+import io.ktor.http.buildUrl
+import io.ktor.http.takeFrom
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -106,6 +112,7 @@ fun Poster(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TitlePanel(details: MediaDetails, watchlistViewModel: MediaDetailsViewModel<*>.Watchlist, modifier: Modifier = Modifier) {
     Box(
@@ -182,7 +189,34 @@ fun TitlePanel(details: MediaDetails, watchlistViewModel: MediaDetailsViewModel<
                         }
                     }
 
-//                    Icon(imageVector = Res.drawable.tmdbLogo, contentDescription = null) //TODO: show tmdb id
+                    details.tmdbId?.let { tmdbId ->
+                        val uriHandler = LocalUriHandler.current
+
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            modifier = Modifier
+                                .border(1.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(5.dp))
+                                .onClick {
+                                    uriHandler.openUri(buildUrl {
+                                        takeFrom("https://www.themoviedb.org/")
+                                        appendPathSegments(
+                                            when(details) {
+                                                is MovieDetails -> "movie"
+                                                is SeriesDetails -> "tv"
+                                            }
+                                        )
+                                        appendPathSegments(details.tmdbId.toString())
+                                    }.toString())
+                                }
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                        ) {
+                            TmdbLogoIcon(modifier = Modifier.height(17.dp))
+                            Text(text = tmdbId.toString())
+                        }
+                    }
                 }
             }
         }
