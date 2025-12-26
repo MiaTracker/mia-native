@@ -1,23 +1,31 @@
 [versions]
-ktor = "3.2.0"
-kotlinx-serialization = "1.8.1"
-lifecycle-viewmodel-compose = "2.8.2"
+agp = "8.11.2"
+compose-hot-reload = "1.0.0-rc03"
+compose-multiplatform = "1.9.3"
+kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.2"
-coil = "3.1.0"
-navigation-compose = "2.8.0-alpha10"
-kotlinx-datetime = "0.6.2"
+kotlinx-serialization-plugin = "2.2.21"
+ktor = "3.3.2"
+kotlinx-serialization = "1.9.0"
+lifecycle-viewmodel-compose = "2.9.6"
+coil = "3.3.0"
+navigation-compose = "2.9.1"
+kotlinx-datetime = "0.7.1"
 charts = "0.2.0"
 colormath = "3.6.1"
+material3-adaptive = "1.2.0"
+
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
@@ -25,3 +33,12 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 charts = { module = "io.github.ehsannarmani:compose-charts", version.ref = "charts" }
 colormath = { module = "com.github.ajalt.colormath:colormath", version.ref = "colormath" }
 colormath-ext-jetpack-compose = { module = "com.github.ajalt.colormath:colormath-ext-jetpack-compose", version.ref = "colormath" }
+material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "material3-adaptive" }
+
+[plugins]
+compose-hot-reload = { id = "org.jetbrains.compose.hot-reload", version.ref = "compose-hot-reload" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinx-serialization-plugin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
