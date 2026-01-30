@@ -31,19 +31,12 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
     val completedLabel = "Completed"
     val commentLabel = "Comment"
     val dateLabel = "Date"
-    val dateLabelWidth = remember { textMeasurer.measure(dateLabel, textStyle).size.width }
-//    val typeWidth = remember {
-//        with(density) {
-//            SourceType.entries.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
-//                .append(textMeasurer.measure(typeLabel, textStyle).size.width).max()?.toDp() ?: 0.dp
-//        } + 10.dp
-//    }
-//
-//    val nameWidth = with(density) {
-//        sources.stream().map { textMeasurer.measure(it.name, textStyle).size.width }
-//            .append(nameLabelWidth).max()?.toDp() ?: 0.dp
-//    }
-
+    val dateWidth = remember {
+        maxOf(
+            textMeasurer.measure(dateLabel, textStyle).size.width,
+            textMeasurer.measure("8888-88-88", textStyle).size.width + 1
+        )
+    }
 
     val sourceNames = sources.map { it.name }
 
@@ -54,45 +47,42 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
 
         if(logs.isNotEmpty()) {
             SourceRow(
-                modifier = Modifier.padding(horizontal = 11.dp)
-            ) {
+                modifier = Modifier.padding(horizontal = 11.dp),
+                leftFields = {
+                    SourceLabel(
+                        text = starsLabel,
+                        modifier = Modifier
+                    )
 
-                SourceLabel(
-                    text = starsLabel,
-                    modifier = Modifier
-                )
-
-                SourceLabel(
-                    text = sourceLabel,
-                    modifier = Modifier
-                )
-                SourceLabel(
-                    text = completedLabel,
-                    modifier = Modifier
-                )
-
-                SourceLabel(
-                    text = commentLabel,
-                    modifier = Modifier.weight(2f)
-                )
-
-
-                SourceLabel(
-                    text = dateLabel,
-                    modifier = Modifier
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width((5 + 2 * 17).dp)
-                )
-            }
+                    SourceLabel(
+                        text = sourceLabel,
+                        modifier = Modifier
+                    )
+                    SourceLabel(
+                        text = completedLabel,
+                        modifier = Modifier
+                    )
+                },
+                mainField = {
+                    SourceLabel(
+                        text = commentLabel,
+                        modifier = Modifier.weight(2f)
+                    )
+                },
+                rightFields = {
+                    SourceLabel(
+                        text = dateLabel,
+                        modifier = Modifier
+                    )
+                },
+                actionPlaceholders = 2
+            )
         }
 
         for (log in logs) {
             var editable by remember { mutableStateOf(false) }
 
-            var sourceId by remember(log) { mutableStateOf(sourceNames.indexOf(log.source)) }
+            var sourceId by remember(log, sources) { mutableStateOf(sourceNames.indexOf(log.source)) }
             var stars by remember(log) { mutableStateOf(log.stars) }
             var completed by remember(log) { mutableStateOf(log.completed) }
             var comment by remember(log) { mutableStateOf(log.comment) }
@@ -108,8 +98,17 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
             }
 
             fun commit() {
-                if(!editable) return
-                onUpdate(Log(id = log.id, date = date, source = sourceNames[sourceId], stars = stars, completed = completed, comment = comment))
+                if (!editable) return
+                onUpdate(
+                    Log(
+                        id = log.id,
+                        date = date,
+                        source = sourceNames[sourceId],
+                        stars = stars,
+                        completed = completed,
+                        comment = comment
+                    )
+                )
                 clear()
             }
 
@@ -127,38 +126,46 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
                 date = date,
                 onDateChange = { date = it },
                 starsWidth = 50.dp,
-                dateWidth = 100.dp,
-                onCommit = { commit() }
-            ) {
-                if(editable) {
-                    TagIcon(
-                        onClick = { clear() }
-                    ) {
-                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
-                    }
+                dateWidth = dateWidth.dp,
+                onCommit = { commit() },
+                actions = sequence {
+                    if (editable) {
+                        yield(
+                            Action(
+                                icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
+                                name = "Cancel",
+                                filled = false,
+                                callback = ::clear
+                            )
+                        )
 
-                    InlineIconButton(
-                        onClick = {
-                            commit()
-                        },
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null)
-                    }
-                }
-                else {
-                    TagIcon(
-                        onClick = { editable = true }
-                    ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                    }
+                        yield(
+                            Action(
+                                icon = { Icon(imageVector = Icons.Default.Check, contentDescription = null) },
+                                name = "Save",
+                                filled = true,
+                                callback = ::commit
+                            )
+                        )
+                    } else {
+                        yield(
+                            Action(
+                            icon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
+                            name = "Edit",
+                            filled = false,
+                            callback = { editable = true }
+                        ))
 
-                    TagIcon(
-                        onClick = { onDelete(log) }
-                    ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                        yield(
+                            Action(
+                            icon = { Icon(imageVector = Icons.Default.Close, contentDescription = null) },
+                            name = "Delete",
+                            filled = false,
+                            callback = { onDelete(log) }
+                        ))
                     }
-                }
-            }
+                }.toList()
+            )
         }
     }
 }
@@ -180,18 +187,18 @@ fun LogTag(
     starsWidth: Dp,
     dateWidth: Dp,
     onCommit: () -> Unit,
-    actions: @Composable RowScope.() -> Unit
+    actions: List<Action>
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.small,
     ) {
-        JumpUnderLayout(
-//            modifier =
-//                if(editable) Modifier.padding(start = 11.dp)
-//                    .fillMaxHeight()
-//                else Modifier.padding(horizontal = 11.dp)
-            left = {
+        SourceRow(
+            modifier =
+                if(editable) Modifier.padding(start = 11.dp)
+                    .fillMaxHeight()
+                else Modifier.padding(horizontal = 11.dp),
+            leftFields = {
                 var starsText by remember { mutableStateOf(stars?.toStarsString() ?: "") }
 
 
@@ -209,7 +216,7 @@ fun LogTag(
                     },
                     readOnly = !editable,
                     alignment = Alignment.CenterHorizontally,
-                    placeholder = "Stars",
+                    placeholder = "#",
                     trailingIcon = {
                         Icon(imageVector = Icons.Default.Star, contentDescription = null)
                     },
@@ -232,19 +239,18 @@ fun LogTag(
                     modifier = Modifier
                 )
             },
-            middle = {
+            mainField = {
                 InlineTextField(
                     value = comment ?: "",
                     onValueChange = onCommentChange,
                     readOnly = !editable,
+                    singleLine = false,
                     alignment = Alignment.CenterHorizontally,
                     placeholder = "Comment",
                     modifier = Modifier
-                        .fillMaxWidth()
-//                        .weight(2f)
                 )
             },
-            right = {
+            rightFields = {
                 InlineDateInput(
                     date = date,
                     onDateChange = onDateChange,
@@ -253,91 +259,8 @@ fun LogTag(
                     modifier = Modifier
                         .width(dateWidth)
                 );
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                ) {
-                    actions()
-                }
-            }
+            },
+            actions = actions
         )
-//        SourceRow(
-//            modifier =
-//                if(editable) Modifier.padding(start = 11.dp)
-//                    .fillMaxHeight()
-//                else Modifier.padding(horizontal = 11.dp)
-//        ) {
-//
-//            var starsText by remember { mutableStateOf(stars?.toStarsString() ?: "") }
-//
-//
-//            InlineTextField(
-//                value = starsText,
-//                onValueChange = {
-//                    if(it.isBlank()) starsText = ""
-//                    else {
-//                        val float = it.toFloatOrNull()
-//                        if(float != null && float >= 0f && float <= 10f) {
-//                            starsText = it
-//                            onStarsChange(float)
-//                        }
-//                    }
-//                },
-//                readOnly = !editable,
-//                alignment = Alignment.CenterHorizontally,
-//                placeholder = "Stars",
-//                trailingIcon = {
-//                    Icon(imageVector = Icons.Default.Star, contentDescription = null)
-//                },
-//                modifier = Modifier
-//                    .fillMaxHeight()
-//                    .width(starsWidth)
-//            )
-//
-//            InlineDropdown(
-//                options = sources,
-//                selectedIdx = sourceId,
-//                onSelectedIdxChanged = onSourceIdChange,
-//                readOnly = !editable,
-//            )
-//
-//            InlineCheckbox(
-//                value = completed,
-//                onValueChange = onCompletedChange,
-//                readOnly = !editable,
-//                modifier = Modifier
-//            )
-//
-//            InlineTextField(
-//                value = comment ?: "",
-//                onValueChange = onCommentChange,
-//                readOnly = !editable,
-//                alignment = Alignment.CenterHorizontally,
-//                placeholder = "Comment",
-//                modifier = Modifier
-//                    .weight(2f)
-//            )
-//
-//            InlineDateInput(
-//                date = date,
-//                onDateChange = onDateChange,
-//                readOnly = !editable,
-//                onDone = onCommit,
-//                modifier = Modifier
-//                    .width(dateWidth)
-//            );
-//
-//            Row(
-//                horizontalArrangement = Arrangement.spacedBy(5.dp),
-//                verticalAlignment = Alignment.CenterVertically,
-//                modifier = Modifier
-//                    .fillMaxHeight()
-//            ) {
-//                actions()
-//            }
-//        }
     }
 }

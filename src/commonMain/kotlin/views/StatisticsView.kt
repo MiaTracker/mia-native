@@ -7,6 +7,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.window.core.layout.WindowSizeClass
 import components.Scrollable
 import data_objects.CategoryStats
 import data_objects.InternalMediaIndex
@@ -185,6 +187,12 @@ fun PieChartWithLegend(
     data: List<Pie>,
     showSum: Boolean = false,
 ) {
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val (size, stroke) =
+        if(windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND))
+            Pair(200.dp, 40.dp)
+        else Pair(130.dp, 25.dp)
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -197,15 +205,16 @@ fun PieChartWithLegend(
             title()
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             PieChart(
-                modifier = Modifier.size(200.dp)
+                modifier = Modifier.size(size)
                     .rotate(-90f),
                 data = data,
                 selectedScale = 1f,
-                style = Pie.Style.Stroke(width = 40.dp),
+                style = Pie.Style.Stroke(width = stroke),
             )
 
             Column(
@@ -278,6 +287,14 @@ fun CategoryStatsView(
 ) {
     if(stats.movie == null && stats.series == null) return
 
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+
+    val (posterWidth, padding) =
+        if(windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND))
+            Pair(300.dp, 20.dp)
+        else Pair(150.dp, 15.dp)
+
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -290,8 +307,9 @@ fun CategoryStatsView(
             title()
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(padding),
+            verticalArrangement = Arrangement.spacedBy(padding),
         ) {
             if(stats.movie != null) {
                 Column(
@@ -305,6 +323,7 @@ fun CategoryStatsView(
                     MediaIndexView(
                         media = stats.movie,
                         showType = false,
+                        width = posterWidth,
                         onClick = { openMediaDetails(stats.movie) },
                     )
                 }
@@ -322,6 +341,7 @@ fun CategoryStatsView(
                     MediaIndexView(
                         media = stats.series,
                         showType = false,
+                        width = posterWidth,
                         onClick = { openMediaDetails(stats.series) },
                     )
                 }

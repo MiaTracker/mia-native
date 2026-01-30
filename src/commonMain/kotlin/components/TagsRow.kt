@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -31,9 +32,11 @@ fun TagsRow(modifier: Modifier = Modifier, onAdd: (String) -> Unit, tags: @Compo
 
         var adding by remember { mutableStateOf(false) }
         var tagName by remember { mutableStateOf("") }
+        var focusRequested by remember { mutableStateOf(false) }
 
         fun clearTagName() {
             adding = false
+            focusRequested = false
             tagName = ""
         }
 
@@ -44,20 +47,22 @@ fun TagsRow(modifier: Modifier = Modifier, onAdd: (String) -> Unit, tags: @Compo
 
         Surface(
             shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier
-                .onFocusChanged { state ->
-                    if(!state.hasFocus) {
-                        clearTagName()
-                    }
-                }
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
 
-                if(adding) {
-                    val focusRequester = remember { FocusRequester() }
+            if(adding) {
+                val focusRequester = remember { FocusRequester() }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .onFocusChanged { state ->
+                            if(focusRequested && !state.hasFocus) {
+                                clearTagName()
+                            }
+                        }
+                        .focusTarget()
+                ) {
 
                     InlineTextField(
                         value = tagName,
@@ -71,16 +76,19 @@ fun TagsRow(modifier: Modifier = Modifier, onAdd: (String) -> Unit, tags: @Compo
                             .padding(horizontal = 10.dp)
                     )
 
-                    LaunchedEffect(Unit) {
-                        focusRequester.requestFocus()
+                    InlineIconButton(onClick = {
+                        commitTag()
+                    }) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = null)
                     }
                 }
-
+                LaunchedEffect(Unit) {
+                    focusRequested = true
+                    focusRequester.requestFocus()
+                }
+            } else {
                 InlineIconButton(onClick = {
-                    if(adding) {
-                        commitTag()
-                    }
-                    else adding = true
+                    adding = true
                 }) {
                     Icon(imageVector = Icons.Filled.Add, contentDescription = null)
                 }

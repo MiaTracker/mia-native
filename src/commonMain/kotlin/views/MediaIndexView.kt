@@ -86,7 +86,7 @@ fun MediaIndexList(
                 val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
                 val (indexWidth, indexSpacing) =
                     if(windowSizeClass.minWidthDp / 180 >= 4) Pair(180.dp, 15.dp)
-                    else Pair(90.dp, 5.dp)
+                    else Pair(120.dp, 5.dp)
 
                 LazyFlowRow(
                     width = indexWidth,

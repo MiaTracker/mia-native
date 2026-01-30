@@ -1,13 +1,13 @@
 package extensions
 
 fun Int.toString(places: Int): String {
-    val builder = StringBuilder()
+    var builder = ""
     var i = this
     var places = places
-    while(i != 0 && places != 0) {
-        builder.append(i % 10)
+    while(i != 0 || places != 0) {
+        builder = (i % 10).toString() + builder
         i /= 10
         places--
     }
-    return builder.toString()
+    return builder
 }

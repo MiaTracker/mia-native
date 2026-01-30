@@ -48,6 +48,7 @@ fun<T: MediaDetails> MediaDetailsView(
     viewModel: MediaDetailsViewModel<T> = viewModel {
         MediaDetailsViewModel(
             adapter = adapter,
+            navController = navController,
             errorHandler = errorHandler
         )
     }
@@ -106,12 +107,12 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                 ) {
                     Backdrop(
                         backdrop = details.backdrop,
-                        minHeight = posterHeight,
+                        height = posterHeight,
                         onEdit = { viewModel.Backdrops().openImageSelection() }
                     )
                     TitlePanel(
                         details = details,
-                        watchlistViewModel = viewModel.Watchlist(),
+                        viewModel = viewModel,
                         posterWidth = posterWidth,
                         padding = padding,
                         modifier = Modifier

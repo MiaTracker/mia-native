@@ -8,7 +8,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         icon = painterResource(Res.drawable.icon),
-        title = "Mia",
+        title = "Mia"
     ) {
         App()
     }

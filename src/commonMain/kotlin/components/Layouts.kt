@@ -160,7 +160,8 @@ private fun ExpandedMediaDetailsLayout(
 fun JumpUnderLayout(
     left: @Composable () -> Unit,
     middle: @Composable () -> Unit,
-    right: @Composable () -> Unit
+    right: @Composable () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val policy = MeasurePolicy { measurables, constraints ->
         val leftPlaceable = measurables[0].measure(constraints)
@@ -168,10 +169,7 @@ fun JumpUnderLayout(
 
         val middleWidth = measurables[1].maxIntrinsicWidth(constraints.maxHeight)
 
-        if(leftPlaceable.width + rightPlaceable.width + middleWidth > constraints.maxWidth) {
-            println("in 1")
-            println(middleWidth)
-            println(constraints.maxWidth)
+        if(leftPlaceable.width + rightPlaceable.width + middleWidth <= constraints.maxWidth) {
             val middlePlaceable = measurables[1].measure(constraints.copy(
                 maxWidth =
                     if(constraints.hasBoundedWidth)
@@ -179,16 +177,16 @@ fun JumpUnderLayout(
                     else constraints.maxWidth
             ))
 
+            val height = maxOf(leftPlaceable.height, middlePlaceable.height, rightPlaceable.height)
             layout(
                 width = leftPlaceable.width + rightPlaceable.width + middlePlaceable.width,
-                height = maxOf(leftPlaceable.height, middlePlaceable.height, rightPlaceable.height)
+                height = height
             ) {
-                leftPlaceable.place(0, 0)
-                middlePlaceable.place(leftPlaceable.width, 0)
-                rightPlaceable.place(leftPlaceable.width + middlePlaceable.width, 0)
+                leftPlaceable.place(0, (height - leftPlaceable.height) / 2)
+                middlePlaceable.place(leftPlaceable.width, (height - middlePlaceable.height) / 2)
+                rightPlaceable.place(leftPlaceable.width + middlePlaceable.width, (height - rightPlaceable.height) / 2)
             }
         } else {
-            println("in 2")
             val firstRowHeight = maxOf(leftPlaceable.height, rightPlaceable.height)
             val middlePlaceable = measurables[1].measure(constraints.copy(
                 maxWidth = constraints.maxWidth,
@@ -200,8 +198,8 @@ fun JumpUnderLayout(
                 width = width,
                 height = firstRowHeight + middlePlaceable.height
             ) {
-                leftPlaceable.place(0, 0)
-                rightPlaceable.place(width - rightPlaceable.width, 0)
+                leftPlaceable.place(0, (firstRowHeight - leftPlaceable.height) / 2)
+                rightPlaceable.place(width - rightPlaceable.width, (firstRowHeight - rightPlaceable.height) / 2)
                 middlePlaceable.place(0, firstRowHeight)
             }
         }
@@ -209,16 +207,17 @@ fun JumpUnderLayout(
 
     Layout(
         content = {
-            Row {
+            Box {
                 left()
             }
-            Row {
+            Box {
                 middle()
             }
-            Row {
+            Box {
                 right()
             }
         },
-        measurePolicy = policy
+        measurePolicy = policy,
+        modifier = modifier
     )
 }

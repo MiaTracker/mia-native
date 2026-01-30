@@ -21,6 +21,13 @@ import enums.SourceType
 
 private val UrlRegex = Regex("(http(s)?://.)?(www\\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_+.~#?&/=]*)")
 
+data class Action(
+    val icon: @Composable () -> Unit,
+    val name: String,
+    val filled: Boolean,
+    val callback: () -> Unit
+)
+
 @Composable
 fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier) {
     val textStyle = LocalTextStyle.current
@@ -50,30 +57,30 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
 
         if(sources.isNotEmpty()) {
             SourceRow(
-                modifier = Modifier.padding(horizontal = 11.dp)
-            ) {
-                SourceLabel(
-                    text = nameLabel,
-                    modifier = Modifier
-                        .width(nameWidth)
-                )
+                modifier = Modifier.padding(horizontal = 11.dp),
+                leftFields = {
+                    SourceLabel(
+                        text = nameLabel,
+                        modifier = Modifier
+                            .width(nameWidth)
+                    )
 
-                SourceLabel(
-                    text = typeLabel,
-                    modifier = Modifier.width(typeWidth)
-                )
-
-                SourceLabel(
-                    text = urlLabel,
-                    modifier = Modifier.weight(2f)
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width((5 + 2 * 17).dp)
-                )
-            }
+                    SourceLabel(
+                        text = typeLabel,
+                        modifier = Modifier.width(typeWidth)
+                    )
+                },
+                mainField = {
+                    SourceLabel(
+                        text = urlLabel,
+                    )
+                },
+                rightFields = {},
+                actionPlaceholders = if(sources.any { UrlRegex.matchEntire(it.url) != null }) 3 else 2
+            )
         }
+
+        val uriHandler = LocalUriHandler.current
 
         for (source in sources) {
             var editable by remember { mutableStateOf(false) }
@@ -95,6 +102,10 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
                 clear()
             }
 
+            val isUrl = remember(url) {
+                UrlRegex.matchEntire(url) != null
+            }
+
             SourceTag(
                 editable = editable,
                 name = name,
@@ -104,52 +115,50 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
                 url = url,
                 onUrlChange = { url = it },
                 nameWidth = nameWidth,
-                onCommit = { commit() }
-            ) {
+                onCommit = { commit() },
+                actions = sequence {
 
-                val isUrl = remember(url) {
-                    UrlRegex.matchEntire(url) != null
-                }
+                    if(editable) {
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
+                            name = "Cancel",
+                            filled = false,
+                            callback = ::clear
+                        ))
 
-                if(editable) {
-                    TagIcon(
-                        onClick = { clear() }
-                    ) {
-                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Check, contentDescription = null) },
+                            name = "Save",
+                            filled = true,
+                            callback = ::commit
+                        ))
                     }
-
-                    InlineIconButton(
-                        onClick = {
-                            commit()
-                        },
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null)
-                    }
-                }
-                else {
-                    if(isUrl) {
-                        val uriHandler = LocalUriHandler.current
-
-                        TagIcon(
-                            onClick = { uriHandler.openUri(url) }
-                        ) {
-                            Icon(imageVector = Icons.Default.Link, contentDescription = null)
+                    else {
+                        if(isUrl) {
+                            yield(Action(
+                                icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null) },
+                                name = "Open Link",
+                                filled = false,
+                                callback = { uriHandler.openUri(url) }
+                            ))
                         }
-                    }
 
-                    TagIcon(
-                        onClick = { editable = true }
-                    ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                    }
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
+                            name = "Edit",
+                            filled = false,
+                            callback = { editable = true }
+                        ))
 
-                    TagIcon(
-                        onClick = { onDelete(source) }
-                    ) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Close, contentDescription = null) },
+                            name = "Delete",
+                            filled = false,
+                            callback = { onDelete(source) }
+                        ))
                     }
-                }
-            }
+                }.toList()
+            )
         }
     }
 }
@@ -165,7 +174,7 @@ fun SourceTag(
     onUrlChange: (String) -> Unit,
     nameWidth: Dp,
     onCommit: () -> Unit,
-    actions: @Composable RowScope.() -> Unit
+    actions: List<Action>
 ) {
 
     Surface(
@@ -176,60 +185,51 @@ fun SourceTag(
             modifier =
                 if(editable) Modifier.padding(start = 11.dp)
                     .fillMaxHeight()
-                else Modifier.padding(horizontal = 11.dp)
-        ) {
+                else Modifier.padding(horizontal = 11.dp),
+            leftFields = {
+                InlineTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    readOnly = !editable,
+                    alignment = Alignment.CenterHorizontally,
+                    placeholder = "Name",
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(nameWidth)
+                )
 
-            InlineTextField(
-                value = name,
-                onValueChange = onNameChange,
-                readOnly = !editable,
-                alignment = Alignment.CenterHorizontally,
-                placeholder = "Name",
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(nameWidth)
-            )
-
-            InlineDropdown(
-                options = SourceType.entries.map { it.name },
-                selectedIdx = type.ordinal,
-                onSelectedIdxChanged = { onTypeChange(SourceType.entries[it]) },
-                readOnly = !editable
-            )
-
-            InlineTextField(
-                value = url,
-                onValueChange = onUrlChange,
-                onDone = { onCommit() },
-                readOnly = !editable,
-                alignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .weight(2f)
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxHeight()
-            ) {
-                actions()
-            }
-        }
+                InlineDropdown(
+                    options = SourceType.entries.map { it.name },
+                    selectedIdx = type.ordinal,
+                    onSelectedIdxChanged = { onTypeChange(SourceType.entries[it]) },
+                    readOnly = !editable
+                )
+            },
+            mainField = {
+                InlineTextField(
+                    value = url,
+                    onValueChange = onUrlChange,
+                    onDone = { onCommit() },
+                    readOnly = !editable,
+                    alignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                )
+            },
+            rightFields = {},
+            actions = actions
+        )
     }
 }
 
 @Composable
-fun SourceRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxHeight()
-    ) {
-        content()
-    }
-}
+expect fun SourceRow(modifier: Modifier = Modifier, leftFields: @Composable () -> Unit,
+                     mainField: @Composable () -> Unit, rightFields: @Composable () -> Unit,
+                     actions: List<Action> = emptyList())
+
+@Composable
+expect fun SourceRow(modifier: Modifier = Modifier, leftFields: @Composable () -> Unit,
+                     mainField: @Composable () -> Unit, rightFields: @Composable () -> Unit,
+                     actionPlaceholders: Int = 0)
 
 @Composable
 fun SourceLabel(text: String, modifier: Modifier = Modifier) {

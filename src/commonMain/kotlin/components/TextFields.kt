@@ -46,6 +46,7 @@ fun InlineTextField(
     alignment: Alignment.Horizontal = Alignment.Start,
     readOnly: Boolean = false,
     outline: Boolean = true,
+    singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable () -> Unit = {},
     modifier: Modifier = Modifier
@@ -88,6 +89,7 @@ fun InlineTextField(
         alignment = alignment,
         readOnly = readOnly,
         outline = outline,
+        singleLine = singleLine,
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
         modifier = modifier
@@ -103,6 +105,7 @@ fun InlineTextField(
     alignment: Alignment.Horizontal = Alignment.Start,
     readOnly: Boolean = false,
     outline: Boolean = true,
+    singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -139,7 +142,7 @@ fun InlineTextField(
                     else TextFieldDefaults.colors().unfocusedTextColor,
                 textAlign = textAlignment
             ),
-            singleLine = true,
+            singleLine = singleLine,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
                 onDone = {
@@ -647,7 +650,7 @@ fun InlineDateInput(
 
     var text by remember(date) {
         mutableStateOf(
-            date.year.toString(places = 4) + date.month.ordinal.toString(places = 2) + date.day.toString(places = 0)
+            date.year.toString(places = 4) + (date.month.ordinal + 1).toString(places = 2) + date.day.toString(places = 2)
         )
     }
 

@@ -9,9 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,24 +29,24 @@ import io.ktor.http.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import view_models.MediaDetailsViewModel
+import kotlin.sequences.sequence
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Backdrop(
     backdrop: Image?,
-    minHeight: Dp,
+    height: Dp,
     onEdit: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = minHeight)
+            .height(height)
             .hoverable(interactionSource)
     ) {
         ApiImage(
@@ -114,7 +114,9 @@ fun Poster(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, watchlistViewModel: MediaDetailsViewModel<*>.Watchlist, modifier: Modifier = Modifier) {
+fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: MediaDetailsViewModel<*>, modifier: Modifier = Modifier) {
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier.fillMaxWidth()
             .background(Color.Black.copy(alpha = 0.8f))
@@ -141,12 +143,23 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, watchlistVie
                 ExpandingToggleButton(
                     checked = details.onWatchlist,
                     onCheckedChange = { checked ->
-                        if(checked) watchlistViewModel.add()
-                        else watchlistViewModel.remove()
+                        if(checked) viewModel.Watchlist().add()
+                        else viewModel.Watchlist().remove()
                     },
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
+                        contentDescription = null
+                    )
+                }
+
+                IconButton(
+                    onClick = { showDeleteConfirmDialog = true },
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
                         contentDescription = null
                     )
                 }
@@ -159,14 +172,16 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, watchlistVie
                     .padding(bottom = 10.dp)
                     .fillMaxWidth()
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     TitlePanelInfo(details)
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     details.stars?.let { stars ->
                         Row(
@@ -220,6 +235,17 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, watchlistVie
                 }
             }
         }
+    }
+
+    if(showDeleteConfirmDialog) {
+        ConfirmDialog(
+            text = { Text("Confirm media deletion?") },
+            onCancel = { showDeleteConfirmDialog = false },
+            onConfirm = {
+                showDeleteConfirmDialog = false
+                viewModel.delete()
+            }
+        )
     }
 }
 
@@ -400,22 +426,23 @@ fun Sources(sourcesViewModel: MediaDetailsViewModel<*>.Sources, sources: List<So
                     url = url,
                     onUrlChange = { url = it },
                     nameWidth = 100.dp,
-                    onCommit = { commit() }
-                ) {
-                    TagIcon(
-                        onClick = { clear() }
-                    ) {
-                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
-                    }
+                    onCommit = { commit() },
+                    actions = sequence {
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
+                            name = "Cancel",
+                            filled = false,
+                            callback = ::clear
+                        ))
 
-                    InlineIconButton(
-                        onClick = {
-                            commit()
-                        },
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                    }
-                }
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Add, contentDescription = null) },
+                            name = "Add",
+                            filled = true,
+                            callback = ::commit
+                        ))
+                    }.toList()
+                )
             }
 
             if(!adding) {
@@ -464,14 +491,14 @@ fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources:
                 var stars by remember { mutableStateOf<Float?>(null) }
                 var completed by remember { mutableStateOf(true) }
                 var comment by remember { mutableStateOf<String?>(null) }
-                var date by remember { mutableStateOf(kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.UTC).date) }
+                var date by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.UTC).date) }
 
                 fun clear() {
                     sourceId = 0
                     stars = null
                     completed = true
                     comment = null
-                    date = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                    date = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
                     adding = false
                 }
 
@@ -501,28 +528,30 @@ fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources:
                     onDateChange = { date = it },
                     starsWidth = 100.dp,
                     dateWidth = 100.dp,
-                    onCommit = { commit() }
+                    onCommit = { commit() },
+                    actions = sequence {
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
+                            name = "Cancel",
+                            filled = false,
+                            callback = ::clear
+                        ))
+
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Add, contentDescription = null) },
+                            name = "Add",
+                            filled = true,
+                            callback = ::commit
+                        ))
+                    }.toList()
+                )
+            } else {
+                InlineIconButton(
+                    enabled = sources.any(),
+                    onClick = {
+                        adding = true
+                    }
                 ) {
-                    TagIcon(
-                        onClick = { clear() }
-                    ) {
-                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null)
-                    }
-
-                    InlineIconButton(
-                        onClick = {
-                            commit()
-                        },
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                    }
-                }
-            }
-
-            if(!adding) {
-                InlineIconButton(onClick = {
-                    if(sources.any()) adding = true
-                }) {
                     Icon(imageVector = Icons.Filled.Add, contentDescription = null)
                 }
             }

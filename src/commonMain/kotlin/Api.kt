@@ -257,6 +257,15 @@ object Api {
                         }
                     }.parse<T>(type)
 
+                suspend fun delete(): Result<Unit> =
+                    httpClient().use { client ->
+                        client.delete(baseUrl) {
+                            url {
+                                appendPathSegments(subpath, mediaId.toString())
+                            }
+                        }
+                    }.parse()
+
 
                 inner class Titles {
 

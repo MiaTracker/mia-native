@@ -3,6 +3,7 @@ package view_models
 import Api
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
 import data_objects.*
 import enums.SourceType
 import infrastructure.ErrorHandler
@@ -38,6 +39,7 @@ sealed interface MediaDetailsUiState<T: MediaDetails> {
 
 sealed interface MediaDetailsAdapter<T: MediaDetails> {
     suspend fun get(): Result<T>
+    suspend fun delete(): Result<Unit>
     suspend fun createTitle(title: TitleCreate): Result<Unit>
     suspend fun setPrimaryTitle(titleId: Int): Result<Unit>
     suspend fun deleteTitle(titleId: Int): Result<Unit>
@@ -60,6 +62,7 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
 
     class MovieDetailsAdapter(private val id: Int) : MediaDetailsAdapter<MovieDetails> {
         override suspend fun get() = Api.instance.Movies().Id(id).get()
+        override suspend fun delete(): Result<Unit> = Api.instance.Movies().Id(id).delete()
         override suspend fun createTitle(title: TitleCreate) = Api.instance.Movies().Id(id).Titles().create(title)
         override suspend fun setPrimaryTitle(titleId: Int) = Api.instance.Movies().Id(id).Titles().Id(titleId).primary()
         override suspend fun deleteTitle(titleId: Int) = Api.instance.Movies().Id(id).Titles().Id(titleId).delete()
@@ -83,6 +86,7 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
 
     class SeriesDetailsAdapter(private val id: Int) : MediaDetailsAdapter<SeriesDetails> {
         override suspend fun get() = Api.instance.Series().Id(id).get()
+        override suspend fun delete(): Result<Unit> = Api.instance.Series().Id(id).delete()
         override suspend fun createTitle(title: TitleCreate) = Api.instance.Series().Id(id).Titles().create(title)
         override suspend fun setPrimaryTitle(titleId: Int) = Api.instance.Series().Id(id).Titles().Id(titleId).primary()
         override suspend fun deleteTitle(titleId: Int) = Api.instance.Series().Id(id).Titles().Id(titleId).delete()
@@ -106,6 +110,7 @@ sealed interface MediaDetailsAdapter<T: MediaDetails> {
 }
 
 class MediaDetailsViewModel<T: MediaDetails>(
+    val navController: NavHostController,
     private val errorHandler: ErrorHandler,
     private val adapter: MediaDetailsAdapter<T>
 ) : ViewModel() {
@@ -114,6 +119,23 @@ class MediaDetailsViewModel<T: MediaDetails>(
 
     init {
         load()
+    }
+
+    fun delete() {
+        viewModelScope.launch(Dispatchers.Unconfined) {
+            adapter.delete().let { result ->
+                when(result) {
+                    is Result.Error<*> -> with(errorHandler) { result.handle() }
+                    is Result.Success<*> -> {
+                        viewModelScope.launch(Dispatchers.Main) {
+                            if(!navController.popBackStack())
+                                navController.navigate(Navigation.Inner.MediaIndex)
+                        }
+                    }
+                }
+            }
+
+        }
     }
 
     private fun load() {
