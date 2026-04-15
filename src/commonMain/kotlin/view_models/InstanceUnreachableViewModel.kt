@@ -3,6 +3,7 @@ package view_models
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import extensions.navigateFresh
 import infrastructure.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ class InstanceUnreachableViewModel(val navController: NavHostController) : ViewM
             println("In 3")
                     viewModelScope.launch(Dispatchers.Main) {
             println("In 4")
-                        navController.navigate(Navigation.Login)
+                        navController.navigateFresh(Navigation.Login)
                     }
                 }
             }

@@ -20,6 +20,7 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import components.BaseScaffold
 import components.TopBar
+import extensions.navigateFresh
 import infrastructure.ErrorHandler
 import infrastructure.Preferences
 import kotlinx.coroutines.launch
@@ -297,7 +298,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Default.PlayArrow, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.MediaIndex>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.MediaIndex)
+                                    navController.navigateFresh(Navigation.Inner.MediaIndex)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -307,7 +308,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Default.Movie, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.MoviesIndex)
+                                    navController.navigateFresh(Navigation.Inner.MoviesIndex)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -317,7 +318,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Default.Tv, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.SeriesIndex)
+                                    navController.navigateFresh(Navigation.Inner.SeriesIndex)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -327,7 +328,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Default.Schedule, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.Watchlist)
+                                    navController.navigateFresh(Navigation.Inner.Watchlist)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -337,7 +338,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Default.BarChart, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Statistics>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.Statistics)
+                                    navController.navigateFresh(Navigation.Inner.Statistics)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -350,7 +351,7 @@ fun InnerNavigation(
                                 icon = { Icon(Icons.Filled.Settings, null) },
                                 selected = false,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.Settings)
+                                    navController.navigateFresh(Navigation.Inner.Settings)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -361,7 +362,7 @@ fun InnerNavigation(
                                 selected = false,
                                 onClick = {
                                     Preferences.Authorization.clear()
-                                    navController.navigate(Navigation.Login)
+                                    navController.navigateFresh(Navigation.Login)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -406,7 +407,7 @@ fun SettingsNavigation(
                             icon = { Icon(Icons.Default.Person, null) },
                             selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true,
                             onClick = {
-                                navController.navigate(Navigation.Inner.Settings.Profile)
+                                navController.navigateFresh(Navigation.Inner.Settings.Profile)
                             },
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)
@@ -416,7 +417,7 @@ fun SettingsNavigation(
                             icon = { Icon(Icons.Default.Info, null) },
                             selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.About>() == true,
                             onClick = {
-                                navController.navigate(Navigation.Inner.Settings.About)
+                                navController.navigateFresh(Navigation.Inner.Settings.About)
                             },
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)
@@ -437,7 +438,7 @@ fun SettingsNavigation(
                                 icon = { Icon(Icons.Default.People, null) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Settings.Users>() == true,
                                 onClick = {
-                                    navController.navigate(Navigation.Inner.Settings.Users)
+                                    navController.navigateFresh(Navigation.Inner.Settings.Users)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

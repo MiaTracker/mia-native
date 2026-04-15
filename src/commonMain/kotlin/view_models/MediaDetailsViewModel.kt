@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import data_objects.*
 import enums.SourceType
+import extensions.navigateFresh
 import infrastructure.ErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,7 +130,7 @@ class MediaDetailsViewModel<T: MediaDetails>(
                     is Result.Success<*> -> {
                         viewModelScope.launch(Dispatchers.Main) {
                             if(!navController.popBackStack())
-                                navController.navigate(Navigation.Inner.MediaIndex)
+                                navController.navigateFresh(Navigation.Inner.MediaIndex)
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import Navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import extensions.navigateFresh
 import infrastructure.Platform
 import infrastructure.Preferences
 import kotlinx.coroutines.Dispatchers
@@ -35,13 +36,13 @@ class InstanceSelectionViewModel(
                 var result = Api.ping(url)
                 if(result) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _navController.navigate(Navigation.Login)
+                        _navController.navigateFresh(Navigation.Login)
                     }
                     return@launch
                 }
                 else if(Platform.hasFixedInstance) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        _navController.navigate(Navigation.InstanceUnreachable)
+                        _navController.navigateFresh(Navigation.InstanceUnreachable)
                     }
                     return@launch
                 }
@@ -83,7 +84,7 @@ class InstanceSelectionViewModel(
             if(result) {
                 Preferences.instanceUrl = url
                 viewModelScope.launch(Dispatchers.Main) {
-                    _navController.navigate(Navigation.Login)
+                    _navController.navigateFresh(Navigation.Login)
                 }
             } else {
                 _uiState.value = state.copy(instanceExists = false, connecting = false)

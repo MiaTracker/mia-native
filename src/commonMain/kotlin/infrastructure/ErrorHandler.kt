@@ -5,6 +5,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.navigation.NavController
 import data_objects.Errors
 import data_objects.Result
+import extensions.navigateFresh
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +23,7 @@ class ErrorHandler(
                     Preferences.Authorization.clear()
 
                     withContext(Dispatchers.Main) {
-                        navController.navigate(Navigation.Login)
+                        navController.navigateFresh(Navigation.Login)
                     }
                 }
 

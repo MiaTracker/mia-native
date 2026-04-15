@@ -9,6 +9,7 @@ import data_objects.Errors
 import data_objects.LoginRequest
 import data_objects.LoginResult
 import data_objects.Result
+import extensions.navigateFresh
 import infrastructure.ErrorHandler
 import infrastructure.Preferences
 import io.ktor.http.*
@@ -39,7 +40,7 @@ class LoginViewModel(
     init {
         if(Preferences.Authorization.token != null) {
             viewModelScope.launch(Dispatchers.Main) {
-                navController.navigate(Navigation.Inner.MediaIndex)
+                navController.navigateFresh(Navigation.Inner.MediaIndex)
             }
         }
         else _uiState.value = LoginUiState.Loaded()
@@ -67,7 +68,7 @@ class LoginViewModel(
 
     fun changeInstance() {
         Preferences.instanceUrl = null
-        navController.navigate(Navigation.InstanceSelection)
+        navController.navigateFresh(Navigation.InstanceSelection)
     }
 
     fun login() {
@@ -94,7 +95,7 @@ class LoginViewModel(
                 is Result.Success<LoginResult> -> {
                     Preferences.Authorization.assign(result.value)
                     viewModelScope.launch(Dispatchers.Main) {
-                        navController.navigate(Navigation.Inner.MediaIndex)
+                        navController.navigateFresh(Navigation.Inner.MediaIndex)
                     }
                 }
             }
