@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import data_objects.ExternalMediaIndex
 import data_objects.InternalMediaIndex
+import data_objects.InternalSearchResults
 import data_objects.Result
 import data_objects.SearchResults
 import enums.MediaType
@@ -86,16 +87,16 @@ sealed interface IndexAdapter {
 
     class StagingIndexAdapter(private val navController: NavController) : IndexAdapter {
         override suspend fun index(): Result<List<InternalMediaIndex>> =
-            Api.instance.Media().byIds(StagingManager.ids.toList())
+            Api.instance.Media().byIds(StagingManager.ids.value.toList(), query = "").map { it.indexes }
 
         override suspend fun search(query: String, commited: Boolean): Result<SearchResults> =
-            when (val res = Api.instance.Media().byIds(StagingManager.ids.toList(), query = query)) {
-                is Result.Error<List<InternalMediaIndex>> -> Result.Error(res.errors)
-                is Result.Success<List<InternalMediaIndex>> -> Result.Success(
+            when (val res = Api.instance.Media().byIds(StagingManager.ids.value.toList(), query = query)) {
+                is Result.Error<InternalSearchResults> -> Result.Error(res.errors)
+                is Result.Success<InternalSearchResults> -> Result.Success(
                     SearchResults(
-                        indexes = res.value,
+                        indexes = res.value.indexes,
                         external = emptyList(),
-                        queryValid = true // TODO
+                        queryValid = res.value.queryValid
                     )
                 )
             }

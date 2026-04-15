@@ -9,3 +9,9 @@ data class SearchResults(
     val external: List<ExternalMediaIndex>,
     val queryValid: Boolean
 )
+
+@Serializable
+data class InternalSearchResults(
+    val indexes: List<InternalMediaIndex>,
+    val queryValid: Boolean
+)

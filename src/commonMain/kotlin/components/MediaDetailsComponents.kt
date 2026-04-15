@@ -112,7 +112,8 @@ fun Poster(
 @Composable
 fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: MediaDetailsViewModel<*>, modifier: Modifier = Modifier) {
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-    val isStaged = details.id in StagingManager.ids
+    val stagedIds by StagingManager.ids.collectAsState()
+    val isStaged = details.id in stagedIds
 
     Box(
         modifier = modifier.fillMaxWidth()
@@ -137,29 +138,31 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: M
                     modifier = Modifier.weight(2f)
                 )
 
-                ExpandingToggleButton(
-                    checked = details.onWatchlist,
-                    label = "On Watchlist",
-                    onCheckedChange = { checked ->
-                        if(checked) viewModel.Watchlist().add()
-                        else viewModel.Watchlist().remove()
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null
-                    )
-                }
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    ExpandingToggleButton(
+                        checked = isStaged,
+                        onCheckedChange = { StagingManager.toggle(details.id) },
+                        label = "Staged",
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = null
+                        )
+                    }
 
-                ExpandingToggleButton(
-                    checked = isStaged,
-                    onCheckedChange = { StagingManager.toggle(details.id) },
-                    label = "Staged",
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Bookmark,
-                        contentDescription = null
-                    )
+                    ExpandingToggleButton(
+                        checked = details.onWatchlist,
+                        label = "On Watchlist",
+                        onCheckedChange = { checked ->
+                            if(checked) viewModel.Watchlist().add()
+                            else viewModel.Watchlist().remove()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null
+                        )
+                    }
                 }
 
                 IconButton(

@@ -3,6 +3,7 @@ package views
 import InnerNavigation
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,11 +13,9 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
@@ -37,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import components.ApiImage
 import components.LazyFlowRow
+import components.PosterContextMenu
 import components.SearchBar
 import data_objects.ExternalMediaIndex
 import data_objects.InternalMediaIndex
@@ -93,7 +93,7 @@ fun MediaIndexList(
 
                 LazyFlowRow(
                     width = indexWidth,
-                    spacing = indexSpacing
+                    spacing = indexSpacing - 6.dp
                 ) {
                     if(state.internal.isNotEmpty()) {
                         items(state.internal) { media ->
@@ -106,7 +106,7 @@ fun MediaIndexList(
                                     showType = showType,
                                     width = indexWidth,
                                     onClick = { viewModel.openDetails(media) },
-                                    isStaged = media.id in StagingManager.ids,
+                                    isStaged = media.id in StagingManager.ids.collectAsState().value,
                                     onStagingToggle = {
                                         StagingManager.toggle(media.id)
                                         if (adapter is IndexAdapter.StagingIndexAdapter) viewModel.reload()
@@ -158,107 +158,104 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onC
 
     val height = (width / 2) * 3
 
-    Box(
-        modifier = modifier
-            .width(width)
-            .height(height)
-            .hoverable(interactionsSource)
-            .let {
-                if(media is InternalMediaIndex) {
-                    it
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
-                            onClick()
-                        }
-                } else it
-            }
-    ) {
-        ApiImage(
-            image = media.poster,
-            modifier = Modifier
-                .fillMaxSize()
-        )
+    val contextMenuItems = if (media is InternalMediaIndex && onStagingToggle != null) {
+        listOf(Pair(if (isStaged) "Unstage" else "Stage", onStagingToggle))
+    } else emptyList()
 
-        if(hovered) {
-            Box(
+    PosterContextMenu(items = contextMenuItems) {
+        Box(
+            modifier = modifier
+                .width(width + 6.dp)
+                .height(height + 6.dp)
+                .border(
+                    width = 3.dp,
+                    color = if (isStaged) MaterialTheme.colorScheme.primary else Color.Transparent
+                )
+                .padding(3.dp)
+                .hoverable(interactionsSource)
+                .let {
+                    if(media is InternalMediaIndex) {
+                        it
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                onClick()
+                            }
+                    } else it
+                }
+        ) {
+            ApiImage(
+                image = media.poster,
                 modifier = Modifier
                     .fillMaxSize()
-            ) {
-                if(media is InternalMediaIndex && media.stars != null) {
-                    Box(
+            )
+
+            if(hovered) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    if(media is InternalMediaIndex && media.stars != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black.copy(alpha = 0.8f))
+                                .padding(5.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.StarRate,
+                                    contentDescription = null,
+                                    tint = Color.Yellow
+                                )
+
+                                Text(
+                                    text = media.stars.toStarsString(),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+
+                    if(media is ExternalMediaIndex) {
+                        FilledIconButton(
+                            onClick = onClick,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                        ) {
+                            Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                        }
+                    }
+
+                    Text(
+                        text = media.title,
+                        textAlign = TextAlign.Center,
+                        color = Color.White,
                         modifier = Modifier
+                            .align(Alignment.BottomCenter)
                             .fillMaxWidth()
                             .background(Color.Black.copy(alpha = 0.8f))
                             .padding(5.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.StarRate,
-                                contentDescription = null,
-                                tint = Color.Yellow
-                            )
-
-                            Text(
-                                text = media.stars.toStarsString(),
-                                color = Color.White
-                            )
-                        }
-                    }
+                    )
                 }
+            }
 
-                if(media is ExternalMediaIndex) {
-                    FilledIconButton(
-                        onClick = onClick,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                    ) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = null)
-                    }
-                }
-
-                if(media is InternalMediaIndex && onStagingToggle != null) {
-                    FilledIconButton(
-                        onClick = onStagingToggle,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                    ) {
-                        Icon(
-                            imageVector = if (isStaged) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = null
-                        )
-                    }
-                }
-
-                Text(
-                    text = media.title,
-                    textAlign = TextAlign.Center,
-                    color = Color.White,
+            if(showType) {
+                Icon(
+                    imageVector = when(media.type) {
+                        MediaType.Movie -> Icons.Filled.Movie
+                        MediaType.Series -> Icons.Filled.Tv
+                    },
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    contentDescription = null,
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.8f))
                         .padding(5.dp)
                 )
             }
-        }
-
-        if(showType) {
-            Icon(
-                imageVector = when(media.type) {
-                    MediaType.Movie -> Icons.Filled.Movie
-                    MediaType.Series -> Icons.Filled.Tv
-                },
-                tint = MaterialTheme.colorScheme.onSurface,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(5.dp)
-            )
         }
     }
 }

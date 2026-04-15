@@ -1,10 +1,13 @@
 package infrastructure
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 object StagingManager {
-    var ids: Set<Int> = emptySet()
-    private set
+    private val _ids = MutableStateFlow<Set<Int>>(emptySet())
+    val ids = _ids.asStateFlow()
 
     fun toggle(id: Int) {
-        ids = if (id in ids) ids - id else ids + id
+        _ids.value = if (id in _ids.value) _ids.value - id else _ids.value + id
     }
 }
