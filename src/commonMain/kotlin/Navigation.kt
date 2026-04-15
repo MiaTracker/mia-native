@@ -23,6 +23,7 @@ import components.TopBar
 import extensions.navigateFresh
 import infrastructure.ErrorHandler
 import infrastructure.Preferences
+import infrastructure.StagingManager
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import view_models.IndexAdapter
@@ -170,7 +171,7 @@ fun RootNavigation(
                             drawerState = drawerState,
                             errorHandler = errorHandler,
                             adapter = IndexAdapter.StagingIndexAdapter(navController),
-                            title = { Text("Staging") }
+                            title = { Text("Staged") }
                         )
                     }
                     composable<Navigation.Inner.Statistics> {
@@ -347,9 +348,11 @@ fun InnerNavigation(
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
                             )
+                            val stagedIds by StagingManager.ids.collectAsState()
                             NavigationDrawerItem(
-                                label = { Text("Staging") },
+                                label = { Text("Staged") },
                                 icon = { Icon(Icons.Default.Bookmark, null) },
+                                badge = { if (stagedIds.isNotEmpty()) Text(stagedIds.size.toString()) },
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Staging>() == true,
                                 onClick = {
                                     navController.navigateFresh(Navigation.Inner.Staging)
