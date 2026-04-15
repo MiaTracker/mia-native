@@ -55,6 +55,9 @@ object Navigation {
         object Watchlist
 
         @Serializable
+        object Staging
+
+        @Serializable
         object Statistics
 
         @Serializable
@@ -160,6 +163,16 @@ fun RootNavigation(
                             title = { Text("Watchlist") }
                         )
                     }
+                    composable<Navigation.Inner.Staging> {
+                        MediaIndexList(
+                            showType = true,
+                            navController = navController,
+                            drawerState = drawerState,
+                            errorHandler = errorHandler,
+                            adapter = IndexAdapter.StagingIndexAdapter(navController),
+                            title = { Text("Staging") }
+                        )
+                    }
                     composable<Navigation.Inner.Statistics> {
                         StatisticsView(
                             navController = navController,
@@ -239,6 +252,7 @@ fun InnerNavigation(
         backstack?.destination?.hasRoute<Navigation.Inner.MoviesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.SeriesIndex>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true ||
+        backstack?.destination?.hasRoute<Navigation.Inner.Staging>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Statistics>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Settings.Profile>() == true ||
         backstack?.destination?.hasRoute<Navigation.Inner.Settings.About>() == true ||
@@ -329,6 +343,16 @@ fun InnerNavigation(
                                 selected = backstack?.destination?.hasRoute<Navigation.Inner.Watchlist>() == true,
                                 onClick = {
                                     navController.navigateFresh(Navigation.Inner.Watchlist)
+                                },
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Staging") },
+                                icon = { Icon(Icons.Default.Bookmark, null) },
+                                selected = backstack?.destination?.hasRoute<Navigation.Inner.Staging>() == true,
+                                onClick = {
+                                    navController.navigateFresh(Navigation.Inner.Staging)
                                 },
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

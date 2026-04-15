@@ -12,15 +12,18 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import infrastructure.StagingManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -103,6 +106,11 @@ fun MediaIndexList(
                                     showType = showType,
                                     width = indexWidth,
                                     onClick = { viewModel.openDetails(media) },
+                                    isStaged = media.id in StagingManager.ids,
+                                    onStagingToggle = {
+                                        StagingManager.toggle(media.id)
+                                        if (adapter is IndexAdapter.StagingIndexAdapter) viewModel.reload()
+                                    },
                                     modifier = Modifier.align(Alignment.Center)
                                 )
                             }
@@ -144,7 +152,7 @@ fun MediaIndexList(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onClick: () -> Unit, isStaged: Boolean = false, onStagingToggle: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val interactionsSource = remember { MutableInteractionSource() }
     val hovered by interactionsSource.collectIsHoveredAsState()
 
@@ -210,6 +218,20 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onC
                             .pointerHoverIcon(PointerIcon.Hand)
                     ) {
                         Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                    }
+                }
+
+                if(media is InternalMediaIndex && onStagingToggle != null) {
+                    FilledIconButton(
+                        onClick = onStagingToggle,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                    ) {
+                        Icon(
+                            imageVector = if (isStaged) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = null
+                        )
                     }
                 }
 

@@ -11,6 +11,7 @@ import data_objects.Result
 import data_objects.SearchResults
 import enums.MediaType
 import infrastructure.ErrorHandler
+import infrastructure.StagingManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,6 +83,30 @@ sealed interface IndexAdapter {
                 MediaType.Series -> navController.navigate(Navigation.Inner.SeriesDetails(id))
             }
     }
+
+    class StagingIndexAdapter(private val navController: NavController) : IndexAdapter {
+        override suspend fun index(): Result<List<InternalMediaIndex>> =
+            Api.instance.Media().byIds(StagingManager.ids.toList())
+
+        override suspend fun search(query: String, commited: Boolean): Result<SearchResults> =
+            when (val res = Api.instance.Media().byIds(StagingManager.ids.toList(), query = query)) {
+                is Result.Error<List<InternalMediaIndex>> -> Result.Error(res.errors)
+                is Result.Success<List<InternalMediaIndex>> -> Result.Success(
+                    SearchResults(
+                        indexes = res.value,
+                        external = emptyList(),
+                        queryValid = true // TODO
+                    )
+                )
+            }
+
+        override suspend fun create(externalId: Int, type: MediaType): Result<Int> = throw Exception()
+        override fun navigateTo(id: Int, type: MediaType) =
+            when (type) {
+                MediaType.Movie -> navController.navigate(Navigation.Inner.MovieDetails(id))
+                MediaType.Series -> navController.navigate(Navigation.Inner.SeriesDetails(id))
+            }
+    }
 }
 
 class MediaIndexViewModel(
@@ -140,6 +165,8 @@ class MediaIndexViewModel(
             type = media.type
         )
     }
+
+    fun reload() = load()
 
     private fun load() {
         val state = _uiState.value

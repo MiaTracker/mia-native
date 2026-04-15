@@ -47,6 +47,7 @@ fun InlineIconButton(onClick: () -> Unit, enabled: Boolean = true, icon: @Compos
 fun ExpandingToggleButton(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    label: String,
     icon: @Composable () -> Unit,
 ) {
     Surface(
@@ -72,7 +73,7 @@ fun ExpandingToggleButton(
                 exit = slideOutHorizontally(targetOffsetX = { it }) + shrinkHorizontally() + fadeOut()
             ) {
                 Text(
-                    text = "On Watchlist",
+                    text = label,
                     modifier = Modifier
                         .padding(start = 10.dp)
                 )

@@ -129,6 +129,22 @@ object Api {
         inner class Media : BaseMediaApi() {
             override val subpath: String
                 get() = "media"
+
+            suspend fun byIds(
+                ids: List<Int>,
+                committed: Boolean = true,
+                query: String? = null
+            ): Result<List<InternalMediaIndex>> =
+                httpClient().use { client ->
+                    val res = client.post(baseUrl) {
+                        url {
+                            appendPathSegments(subpath, "by_ids")
+                            parameters.append("committed", committed.toString())
+                        }
+                        setBody(MediaByIdsQuery(ids = ids, query = query ?: ""))
+                    }
+                    res
+                }.parse()
         }
 
         inner class Movies : BaseMediaInstanceApi<MovieDetails>() {

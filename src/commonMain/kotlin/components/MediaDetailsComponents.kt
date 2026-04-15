@@ -7,11 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,11 +21,11 @@ import androidx.compose.ui.unit.times
 import data_objects.*
 import enums.SourceType
 import extensions.toStarsString
+import infrastructure.StagingManager
 import io.ktor.http.*
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import view_models.MediaDetailsViewModel
-import kotlin.sequences.sequence
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -116,6 +112,7 @@ fun Poster(
 @Composable
 fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: MediaDetailsViewModel<*>, modifier: Modifier = Modifier) {
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    val isStaged = details.id in StagingManager.ids
 
     Box(
         modifier = modifier.fillMaxWidth()
@@ -142,6 +139,7 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: M
 
                 ExpandingToggleButton(
                     checked = details.onWatchlist,
+                    label = "On Watchlist",
                     onCheckedChange = { checked ->
                         if(checked) viewModel.Watchlist().add()
                         else viewModel.Watchlist().remove()
@@ -149,6 +147,17 @@ fun TitlePanel(details: MediaDetails, posterWidth: Dp, padding: Dp, viewModel: M
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
+                        contentDescription = null
+                    )
+                }
+
+                ExpandingToggleButton(
+                    checked = isStaged,
+                    onCheckedChange = { StagingManager.toggle(details.id) },
+                    label = "Staged",
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
                         contentDescription = null
                     )
                 }
