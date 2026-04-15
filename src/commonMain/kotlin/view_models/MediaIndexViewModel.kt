@@ -119,10 +119,6 @@ class MediaIndexViewModel(
 
     private var fetchJob: Job? = null
 
-    init {
-        load()
-    }
-
     fun searchQueryChanged(query: String) {
         _uiState.value = when (val state = _uiState.value) {
             is MediaIndexUiState.Loading -> {
