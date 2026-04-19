@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalFocusManager
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import components.BaseScaffold
+import extensions.formFieldKeyEvents
 import infrastructure.ErrorHandler
 import view_models.LoginUiState
 import view_models.LoginViewModel
@@ -83,13 +83,7 @@ fun LoginView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester)
-                        .onKeyEvent { event ->
-                            if(event.key == Key.Enter || event.key == Key.Tab) {
-                                if(event.type == KeyEventType.KeyDown)
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                true
-                            } else false
-                        },
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next); }
                 )
 
                 TextField(
@@ -103,17 +97,12 @@ fun LoginView(
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null)
                     },
+                    singleLine = true,
                     enabled = !state.loggingIn,
                     isError = state.isLoginIncorrect,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onKeyEvent { event ->
-                            if(event.key == Key.Enter) {
-                                if(event.type == KeyEventType.KeyDown)
-                                    viewModel.login()
-                                true
-                            } else false
-                        },
+                        .formFieldKeyEvents(focusManager) { viewModel.login(); }
                 )
 
                 Row(

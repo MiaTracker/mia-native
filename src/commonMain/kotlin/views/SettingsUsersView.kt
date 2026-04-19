@@ -32,8 +32,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import extensions.formFieldKeyEvents
 import infrastructure.ErrorHandler
 import view_models.SettingsUsersUiState
 import view_models.SettingsUsersViewModel
@@ -204,6 +207,8 @@ fun UserRegistrationDialog(
     state: SettingsUsersUiState.Loaded.UserRegistrationDialogState,
     viewModel: SettingsUsersViewModel
 ) {
+    val focusManager = LocalFocusManager.current
+
     Dialog(
         onDismissRequest = viewModel::closeUserRegistrationDialog
     ) {
@@ -231,6 +236,7 @@ fun UserRegistrationDialog(
                     isError = state.username != null && state.username.isBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next) }
                 )
 
                 TextField(
@@ -240,6 +246,7 @@ fun UserRegistrationDialog(
                     isError = state.email != null && state.email.isBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next) }
                 )
 
                 TextField(
@@ -249,7 +256,8 @@ fun UserRegistrationDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     isError = (state.password != null && state.password.isBlank()) || !state.passwordMatchesCriteria,
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next) },
                     supportingText = {
                         if(!state.passwordMatchesCriteria) {
                             Text(
@@ -267,6 +275,7 @@ fun UserRegistrationDialog(
                     isError = state.passwordRepeat != null && (state.passwordRepeat.isBlank() || state.passwordRepeat != state.password),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .formFieldKeyEvents(focusManager, viewModel::registerUser)
                 )
 
                 Row(

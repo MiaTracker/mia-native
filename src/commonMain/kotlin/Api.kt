@@ -28,9 +28,9 @@ object Api {
             }
 
             install(HttpTimeout) {
-                requestTimeoutMillis = 60000
+                requestTimeoutMillis = 600000
                 connectTimeoutMillis = 5000
-                socketTimeoutMillis = 60000
+                socketTimeoutMillis = 600000
             }
 
             defaultRequest {

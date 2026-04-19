@@ -129,6 +129,8 @@ fun InlineTextField(
 
     val isFocused by interactionsSource.collectIsFocusedAsState()
 
+    val focusManager = LocalFocusManager.current
+
     Box(
         modifier = modifier
     ) {
@@ -153,11 +155,20 @@ fun InlineTextField(
             interactionSource = interactionsSource,
             visualTransformation = visualTransformation,
             modifier = Modifier
-                .onKeyEvent { event ->
-                    if(event.key == Key.Enter) {
-                        if(event.type == KeyEventType.KeyDown && !readOnly) onDone()
-                        return@onKeyEvent true
-                    } else return@onKeyEvent false
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.Tab if event.isShiftPressed -> { focusManager.moveFocus(FocusDirection.Previous); true }
+                        Key.Tab -> { focusManager.moveFocus(FocusDirection.Next); true }
+                        Key.Enter -> {
+                            if (!readOnly && singleLine) {
+                                onDone()
+                                true
+                            }
+                            else false
+                        }
+                        else -> false
+                    }
                 },
             decorationBox = { innerTextField ->
                 Box(
@@ -323,6 +334,13 @@ fun InlineDropdown(
                             if(event.type == KeyEventType.KeyDown)
                                 selectPrevious()
                         }
+                        else if(event.key == Key.Tab) {
+                            if(event.type == KeyEventType.KeyDown) {
+                                setFocused(false)
+                                if(event.isShiftPressed) focusManager.moveFocus(FocusDirection.Previous)
+                                else focusManager.moveFocus(FocusDirection.Next)
+                            }
+                        }
                         else if(event.key == Key.Enter) {
                             if(event.type == KeyEventType.KeyDown) {
                                 setFocused(false)
@@ -432,7 +450,6 @@ fun InlineDropdown(
         LaunchedEffect(Unit) {
             focusManager.moveFocus(FocusDirection.Right)
         }
-        @Suppress("AssignedValueIsNeverRead")
         focusNextOnRecompose = false
     }
 }

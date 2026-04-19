@@ -13,11 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import extensions.formFieldKeyEvents
 import infrastructure.ErrorHandler
 import view_models.SettingsProfileUiState
 import view_models.SettingsProfileViewModel
@@ -109,6 +112,8 @@ fun PasswordChangeDialog(
     state: SettingsProfileUiState.Loaded.ChangePasswordDialogState,
     viewModel: SettingsProfileViewModel,
 ) {
+    val focusManager = LocalFocusManager.current
+
     Dialog(
         onDismissRequest = viewModel::closeChangePasswordDialog
     ) {
@@ -136,6 +141,7 @@ fun PasswordChangeDialog(
                     isError = state.oldPassword == "" || !state.oldPasswordCorrect,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next) }
                 )
 
                 TextField(
@@ -144,7 +150,8 @@ fun PasswordChangeDialog(
                     label = { Text("New Password") },
                     isError = state.newPassword == "" || !state.newPasswordMatchesCriteria,
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .formFieldKeyEvents(focusManager) { focusManager.moveFocus(FocusDirection.Next) },
                     supportingText = {
                         if(!state.newPasswordMatchesCriteria) {
                             Text(
@@ -160,7 +167,8 @@ fun PasswordChangeDialog(
                     label = { Text("Repeat New Password") },
                     isError = (state.repeatPassword != state.newPassword || state.repeatPassword == "") && state.repeatPassword != null,
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .formFieldKeyEvents(focusManager, viewModel::changePassword),
                     supportingText = {
                         if((state.repeatPassword != state.newPassword || state.repeatPassword == "") && state.repeatPassword != null) {
                             Text(
