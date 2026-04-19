@@ -23,7 +23,8 @@ sealed interface SettingsProfileUiState {
             val oldPassword: String? = null,
             val newPassword: String? = null,
             val repeatPassword: String? = null,
-            val oldPasswordCorrect: Boolean = true
+            val oldPasswordCorrect: Boolean = true,
+            val isSubmitting: Boolean = false
         ) {
             val passwordRegex: Regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d\\w\\W]{7,}\$".toRegex()
 
@@ -119,6 +120,10 @@ class SettingsProfileViewModel(
             return
         }
 
+        _uiState.value = state.copy(
+            changePasswordDialogState = dialogState.copy(isSubmitting = true)
+        )
+
         viewModelScope.launch {
             val result = Api.instance.Users().changePassword(
                 PasswordChange(
@@ -129,7 +134,15 @@ class SettingsProfileViewModel(
             )
 
             when(result) {
-                is Result.Error<*> -> with(errorHandler) { result.handle() }
+                is Result.Error<*> -> {
+                    with(errorHandler) { result.handle() }
+                    val s = _uiState.value
+                    if(s is SettingsProfileUiState.Loaded) {
+                        _uiState.value = s.copy(
+                            changePasswordDialogState = s.changePasswordDialogState?.copy(isSubmitting = false)
+                        )
+                    }
+                }
                 is Result.Success<*> -> {
                     _uiState.value = state.copy(
                         changePasswordDialogState = null

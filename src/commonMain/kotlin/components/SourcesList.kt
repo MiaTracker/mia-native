@@ -29,7 +29,7 @@ data class Action(
 )
 
 @Composable
-fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier) {
+fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (Source) -> Unit, modifier: Modifier = Modifier, pendingItemId: Int? = null) {
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -116,8 +116,14 @@ fun SourcesList(sources: List<Source>, onUpdate: (Source) -> Unit, onDelete: (So
                 onUrlChange = { url = it },
                 nameWidth = nameWidth,
                 onCommit = { commit() },
-                actions = sequence {
-
+                actions = if(pendingItemId == source.id) {
+                    listOf(Action(
+                        icon = { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) },
+                        name = "",
+                        filled = false,
+                        callback = {}
+                    ))
+                } else sequence {
                     if(editable) {
                         yield(Action(
                             icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },

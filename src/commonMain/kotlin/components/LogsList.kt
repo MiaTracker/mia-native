@@ -4,6 +4,7 @@ package components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +12,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -21,10 +21,9 @@ import extensions.toStarsString
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, onDelete: (Log) -> Unit, modifier: Modifier = Modifier) {
+fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, onDelete: (Log) -> Unit, modifier: Modifier = Modifier, pendingItemId: Int? = null) {
     val textStyle = LocalTextStyle.current
     val textMeasurer = rememberTextMeasurer()
-    val density = LocalDensity.current
 
     val starsLabel = "Stars"
     val sourceLabel = "Source"
@@ -128,36 +127,37 @@ fun LogsList(logs: List<Log>, sources: List<Source>, onUpdate: (Log) -> Unit, on
                 starsWidth = 50.dp,
                 dateWidth = dateWidth.dp,
                 onCommit = { commit() },
-                actions = sequence {
+                actions = if(pendingItemId == log.id) {
+                    listOf(Action(
+                        icon = { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) },
+                        name = "",
+                        filled = false,
+                        callback = {}
+                    ))
+                } else sequence {
                     if (editable) {
-                        yield(
-                            Action(
-                                icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
-                                name = "Cancel",
-                                filled = false,
-                                callback = ::clear
-                            )
-                        )
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Cancel, contentDescription = null) },
+                            name = "Cancel",
+                            filled = false,
+                            callback = ::clear
+                        ))
 
-                        yield(
-                            Action(
-                                icon = { Icon(imageVector = Icons.Default.Check, contentDescription = null) },
-                                name = "Save",
-                                filled = true,
-                                callback = ::commit
-                            )
-                        )
+                        yield(Action(
+                            icon = { Icon(imageVector = Icons.Default.Check, contentDescription = null) },
+                            name = "Save",
+                            filled = true,
+                            callback = ::commit
+                        ))
                     } else {
-                        yield(
-                            Action(
+                        yield(Action(
                             icon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
                             name = "Edit",
                             filled = false,
                             callback = { editable = true }
                         ))
 
-                        yield(
-                            Action(
+                        yield(Action(
                             icon = { Icon(imageVector = Icons.Default.Close, contentDescription = null) },
                             name = "Delete",
                             filled = false,
@@ -258,7 +258,7 @@ fun LogTag(
                     onDone = onCommit,
                     modifier = Modifier
                         .width(dateWidth)
-                );
+                )
             },
             actions = actions
         )

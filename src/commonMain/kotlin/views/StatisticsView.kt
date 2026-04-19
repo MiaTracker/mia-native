@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.window.core.layout.WindowSizeClass
+import components.LoadingSpinner
 import components.Scrollable
 import data_objects.CategoryStats
 import data_objects.InternalMediaIndex
@@ -49,7 +50,7 @@ fun StatisticsView(
         title = { Text("Statistics") },
     ) {
         when(val state = uiState) {
-            is StatisticsUiState.Loading -> { Text("Loading") }
+            is StatisticsUiState.Loading -> { LoadingSpinner() }
             is StatisticsUiState.Loaded -> {
                 Scrollable {
                     StatisticsViewContent(

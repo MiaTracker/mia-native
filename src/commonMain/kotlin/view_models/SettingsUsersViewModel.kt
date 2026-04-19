@@ -16,13 +16,15 @@ sealed interface SettingsUsersUiState {
     object Loading : SettingsUsersUiState
     data class Loaded(
         val users: List<UserProfile>,
-        val userRegistrationDialogState: UserRegistrationDialogState? = null
+        val userRegistrationDialogState: UserRegistrationDialogState? = null,
+        val pendingUserUuid: String? = null
     ) : SettingsUsersUiState {
         data class UserRegistrationDialogState(
             val username: String? = null,
             val email: String? = null,
             val password: String? = null,
             val passwordRepeat: String? = null,
+            val isSubmitting: Boolean = false
         ) {
             val passwordRegex: Regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d\\w\\W]{7,}\$".toRegex()
 
@@ -42,11 +44,19 @@ class SettingsUsersViewModel(
     }
 
     fun deleteUser(user: UserProfile) {
+        val state = _uiState.value
+        if(state !is SettingsUsersUiState.Loaded) return
+        _uiState.value = state.copy(pendingUserUuid = user.uuid)
+
         viewModelScope.launch {
             val result = Api.instance.Users().delete(user.uuid)
 
             when(result) {
-                is Result.Error<*> -> with(errorHandler) { result.handle() }
+                is Result.Error<*> -> {
+                    with(errorHandler) { result.handle() }
+                    val s = _uiState.value
+                    if(s is SettingsUsersUiState.Loaded) _uiState.value = s.copy(pendingUserUuid = null)
+                }
                 is Result.Success<Unit> -> {
                     load()
                 }
@@ -107,6 +117,8 @@ class SettingsUsersViewModel(
             || dialogState.password.isNullOrBlank() || dialogState.passwordRepeat != dialogState.password
             || !dialogState.passwordMatchesCriteria) return
 
+        _uiState.value = state.copy(userRegistrationDialogState = dialogState.copy(isSubmitting = true))
+
         viewModelScope.launch {
             val result = Api.instance.Users().register(
                 UserRegister(
@@ -118,7 +130,15 @@ class SettingsUsersViewModel(
             )
 
             when(result) {
-                is Result.Error<*> -> with(errorHandler) { result.handle() }
+                is Result.Error<*> -> {
+                    with(errorHandler) { result.handle() }
+                    val s = _uiState.value
+                    if(s is SettingsUsersUiState.Loaded) {
+                        _uiState.value = s.copy(
+                            userRegistrationDialogState = s.userRegistrationDialogState?.copy(isSubmitting = false)
+                        )
+                    }
+                }
                 is Result.Success<*> -> {
                     load()
                     closeUserRegistrationDialog()

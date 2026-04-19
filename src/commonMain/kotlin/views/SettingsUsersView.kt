@@ -16,8 +16,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import extensions.formFieldKeyEvents
+import components.LoadingSpinner
 import infrastructure.ErrorHandler
 import view_models.SettingsUsersUiState
 import view_models.SettingsUsersViewModel
@@ -69,7 +72,7 @@ fun SettingsUsersView(
         errorHandler = errorHandler
     ) {
         when (val state = uiState) {
-            is SettingsUsersUiState.Loading -> { }
+            is SettingsUsersUiState.Loading -> { LoadingSpinner() }
             is SettingsUsersUiState.Loaded -> {
                 val fontFamilyResolver = LocalFontFamilyResolver.current
                 val density = LocalDensity.current
@@ -159,16 +162,25 @@ fun SettingsUsersView(
                                 Box(
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    IconButton(
-                                        onClick = { viewModel.deleteUser(user) },
-                                        modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Delete,
-                                            contentDescription = null,
+                                    if(state.pendingUserUuid == user.uuid) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .align(Alignment.CenterEnd),
+                                            strokeWidth = 2.dp
                                         )
+                                    } else {
+                                        IconButton(
+                                            onClick = { viewModel.deleteUser(user) },
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .pointerHoverIcon(PointerIcon.Hand)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Delete,
+                                                contentDescription = null,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -293,10 +305,15 @@ fun UserRegistrationDialog(
 
                     Button(
                         onClick = viewModel::registerUser,
+                        enabled = !state.isSubmitting,
                         modifier = Modifier
                             .pointerHoverIcon(PointerIcon.Hand)
                     ) {
-                        Text("Register")
+                        if(state.isSubmitting) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Register")
+                        }
                     }
                 }
             }

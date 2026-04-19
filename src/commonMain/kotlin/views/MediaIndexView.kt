@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import components.ApiImage
 import components.LazyFlowRow
+import components.LoadingSpinner
 import components.PosterContextMenu
 import components.SearchBar
 import data_objects.ExternalMediaIndex
@@ -101,7 +102,7 @@ fun MediaIndexList(
         }
     ) {
         when (val state = uiState) {
-            is MediaIndexUiState.Loading -> { Text("loading") }
+            is MediaIndexUiState.Loading -> { LoadingSpinner() }
             is MediaIndexUiState.Loaded -> {
                 val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
                 val (indexWidth, indexSpacing) =
@@ -156,6 +157,7 @@ fun MediaIndexList(
                                     onClick = {
                                         viewModel.addExternal(media)
                                     },
+                                    isPending = state.pendingExternalId == media.externalId,
                                     modifier = Modifier.align(Alignment.Center)
                                 )
                             }
@@ -169,7 +171,7 @@ fun MediaIndexList(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onClick: () -> Unit, isStaged: Boolean = false, onStagingToggle: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onClick: () -> Unit, isPending: Boolean = false, isStaged: Boolean = false, onStagingToggle: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val interactionsSource = remember { MutableInteractionSource() }
     val hovered by interactionsSource.collectIsHoveredAsState()
 
@@ -238,13 +240,19 @@ fun MediaIndexView(media: MediaIndex, showType: Boolean, width: Dp = 180.dp, onC
                     }
 
                     if(media is ExternalMediaIndex) {
-                        FilledIconButton(
-                            onClick = onClick,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                        ) {
-                            Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                        if(isPending) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        } else {
+                            FilledIconButton(
+                                onClick = onClick,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                            ) {
+                                Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                            }
                         }
                     }
 

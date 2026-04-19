@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import components.LoadingSpinner
 import extensions.formFieldKeyEvents
 import infrastructure.ErrorHandler
 import view_models.SettingsProfileUiState
@@ -38,7 +39,12 @@ fun SettingsProfileView(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val state = uiState
-    if(state !is SettingsProfileUiState.Loaded) return
+    if(state !is SettingsProfileUiState.Loaded) {
+        SettingsNavigation(navController = navController, drawerState = drawerState, errorHandler = errorHandler) {
+            LoadingSpinner()
+        }
+        return
+    }
 
     SettingsNavigation(
         navController = navController,
@@ -194,10 +200,15 @@ fun PasswordChangeDialog(
 
                     Button(
                         onClick = viewModel::changePassword,
+                        enabled = !state.isSubmitting,
                         modifier = Modifier
                             .pointerHoverIcon(PointerIcon.Hand)
                     ) {
-                        Text("Change Password")
+                        if(state.isSubmitting) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Change Password")
+                        }
                     }
                 }
             }

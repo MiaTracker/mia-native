@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import components.BaseScaffold
+import components.LoadingSpinner
 import extensions.formFieldKeyEvents
 import infrastructure.ErrorHandler
 import view_models.LoginUiState
@@ -40,7 +41,10 @@ fun LoginView(
     val vmState by viewModel.uiState.collectAsState()
 
     val state = vmState
-    if(state !is LoginUiState.Loaded) return
+    if(state !is LoginUiState.Loaded) {
+        BaseScaffold(errorHandler = errorHandler) { LoadingSpinner() }
+        return
+    }
 
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -124,7 +128,11 @@ fun LoginView(
                         modifier = Modifier
                             .pointerHoverIcon(if(state.isValid) PointerIcon.Hand else PointerIcon.Default)
                     ) {
-                        Text("Login")
+                        if(state.loggingIn) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Login")
+                        }
                     }
                 }
             }

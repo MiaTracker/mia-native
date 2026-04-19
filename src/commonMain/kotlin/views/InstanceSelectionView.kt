@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import components.BaseScaffold
+import components.LoadingSpinner
 import infrastructure.ErrorHandler
 import view_models.InstanceSelectionUiState
 import view_models.InstanceSelectionViewModel
@@ -35,7 +36,10 @@ fun InstanceSelectionView(
     val vmState by viewModel.uiState.collectAsState()
 
     val state = vmState
-    if(state !is InstanceSelectionUiState.Loaded) return
+    if(state !is InstanceSelectionUiState.Loaded) {
+        BaseScaffold(errorHandler = errorHandler, modifier = Modifier.padding(15.dp)) { LoadingSpinner() }
+        return
+    }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -109,7 +113,11 @@ fun InstanceSelectionView(
                         modifier = Modifier
                             .pointerHoverIcon(if (state.isValid && !state.connecting) PointerIcon.Hand else PointerIcon.Default)
                     ) {
-                        Text(text = "Connect")
+                        if(state.connecting) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text(text = "Connect")
+                        }
                     }
                 }
             }

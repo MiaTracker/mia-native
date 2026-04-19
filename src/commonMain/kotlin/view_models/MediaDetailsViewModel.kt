@@ -18,14 +18,17 @@ import kotlinx.datetime.LocalDate
 sealed interface ImageSelectionUiState {
     sealed interface LoadedImageSelectionUiState : ImageSelectionUiState {
         val images: List<ImageCandidate>
+        val pendingImagePath: String?
     }
 
     object Loading: ImageSelectionUiState
     data class BackdropSelection(
-        override val images: List<ImageCandidate>
+        override val images: List<ImageCandidate>,
+        override val pendingImagePath: String? = null
     ) : LoadedImageSelectionUiState
     data class PosterSelection(
-        override val images: List<ImageCandidate>
+        override val images: List<ImageCandidate>,
+        override val pendingImagePath: String? = null
     ) : LoadedImageSelectionUiState
 }
 
@@ -34,7 +37,8 @@ sealed interface MediaDetailsUiState<T: MediaDetails> {
     data class Loaded<T: MediaDetails>(
         val mediaDetails: T,
 
-        val imageSelectionState: ImageSelectionUiState? = null
+        val imageSelectionState: ImageSelectionUiState? = null,
+        val pendingItemId: Int? = null
     ) : MediaDetailsUiState<T>
 }
 
@@ -145,6 +149,16 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
     }
 
+    private fun setPendingItemId(id: Int) {
+        val state = _uiState.value
+        if(state is MediaDetailsUiState.Loaded) _uiState.value = state.copy(pendingItemId = id)
+    }
+
+    private fun clearPendingItemId() {
+        val state = _uiState.value
+        if(state is MediaDetailsUiState.Loaded) _uiState.value = state.copy(pendingItemId = null)
+    }
+
     private suspend fun refresh() {
         val result = adapter.get()
 
@@ -182,13 +196,32 @@ class MediaDetailsViewModel<T: MediaDetails>(
             _uiState.value = state.copy(imageSelectionState = null)
         }
 
-        fun setImage(backdrop: ImageCandidate) {
-            if(!backdrop.current) {
+        fun setImage(candidate: ImageCandidate) {
+            if(!candidate.current) {
+                val state = _uiState.value
+                if(state !is MediaDetailsUiState.Loaded) return
+                val imageState = state.imageSelectionState
+                _uiState.value = when(imageState) {
+                    is ImageSelectionUiState.BackdropSelection -> state.copy(imageSelectionState = imageState.copy(pendingImagePath = candidate.path))
+                    is ImageSelectionUiState.PosterSelection -> state.copy(imageSelectionState = imageState.copy(pendingImagePath = candidate.path))
+                    else -> return
+                }
                 viewModelScope.launch(Dispatchers.Unconfined) {
-                    val result = setDefaultImageApi(backdrop)
+                    val result = setDefaultImageApi(candidate)
 
                     when(result) {
-                        is Result.Error<*> -> with(errorHandler) { result.handle() }
+                        is Result.Error<*> -> {
+                            with(errorHandler) { result.handle() }
+                            val s = _uiState.value
+                            if(s is MediaDetailsUiState.Loaded) {
+                                val imgState = s.imageSelectionState
+                                _uiState.value = when(imgState) {
+                                    is ImageSelectionUiState.BackdropSelection -> s.copy(imageSelectionState = imgState.copy(pendingImagePath = null))
+                                    is ImageSelectionUiState.PosterSelection -> s.copy(imageSelectionState = imgState.copy(pendingImagePath = null))
+                                    else -> s
+                                }
+                            }
+                        }
                         is Result.Success<*> -> {
                             refresh()
                             closeImageSelection()
@@ -248,27 +281,25 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
 
         fun setPrimary(title: AlternativeTitle) {
+            setPendingItemId(title.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.setPrimaryTitle(title.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<Unit> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<Unit> -> { refresh() }
                 }
             }
         }
 
         fun delete(title: AlternativeTitle) {
+            setPendingItemId(title.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.deleteTitle(title.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }
@@ -291,14 +322,13 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
 
         fun delete(genre: Genre) {
+            setPendingItemId(genre.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.deleteGenre(genre.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }
@@ -321,14 +351,13 @@ class MediaDetailsViewModel<T: MediaDetails>(
         }
 
         fun delete(tag: Tag) {
+            setPendingItemId(tag.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.deleteTag(tag.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }
@@ -385,30 +414,25 @@ class MediaDetailsViewModel<T: MediaDetails>(
 
         fun update(source: Source) {
             if(source.name.isBlank()) return
+            setPendingItemId(source.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
-                val result = adapter.updateSource(
-                    source = source
-                )
+                val result = adapter.updateSource(source = source)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
-
         }
 
         fun delete(source: Source) {
+            setPendingItemId(source.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.deleteSource(source.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }
@@ -446,27 +470,25 @@ class MediaDetailsViewModel<T: MediaDetails>(
 
         fun update(log: Log) {
             if(log.source.isBlank()) return
+            setPendingItemId(log.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.updateLog(log = log)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }
 
         fun delete(log: Log) {
+            setPendingItemId(log.id)
             viewModelScope.launch(Dispatchers.Unconfined) {
                 val result = adapter.deleteLog(log.id)
 
                 when(result) {
-                    is Result.Error<*> -> with(errorHandler) { result.handle() }
-                    is Result.Success<*> -> {
-                        refresh()
-                    }
+                    is Result.Error<*> -> { with(errorHandler) { result.handle() }; clearPendingItemId() }
+                    is Result.Success<*> -> { refresh() }
                 }
             }
         }

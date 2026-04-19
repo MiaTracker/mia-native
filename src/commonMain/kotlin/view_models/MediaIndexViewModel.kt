@@ -35,7 +35,8 @@ sealed interface MediaIndexUiState {
 
         override val searchQuery: String = "",
         override val searchQueryCommited: Boolean = false,
-        val searchQueryValid: Boolean = true
+        val searchQueryValid: Boolean = true,
+        val pendingExternalId: Int? = null
     ) : MediaIndexUiState
 }
 
@@ -144,10 +145,16 @@ class MediaIndexViewModel(
     }
 
     fun addExternal(index: ExternalMediaIndex) {
+        val state = _uiState.value as? MediaIndexUiState.Loaded ?: return
+        _uiState.value = state.copy(pendingExternalId = index.externalId)
         viewModelScope.launch {
             val result = adapter.create(externalId = index.externalId, type = index.type)
             when (result) {
-                is Result.Error<*> -> with(errorHandler) { result.handle() }
+                is Result.Error<*> -> {
+                    with(errorHandler) { result.handle() }
+                    val s = _uiState.value
+                    if(s is MediaIndexUiState.Loaded) _uiState.value = s.copy(pendingExternalId = null)
+                }
                 is Result.Success<Int> -> {
                     adapter.navigateTo(id = result.value, type = index.type)
                     load()

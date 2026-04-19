@@ -318,7 +318,7 @@ fun TitlePanelInfo(details: MediaDetails) {
 }
 
 @Composable
-fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier: Modifier = Modifier) {
+fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier: Modifier = Modifier, pendingItemId: Int? = null) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -332,18 +332,20 @@ fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier
             for (title in details.alternativeTitles) {
                 Tag(
                     actions = {
-                        TagIcon(
-                            onClick = { viewModel.AlternativeTitles().setPrimary(title) }
-                        ) {
-                            Icon(imageVector = Icons.Default.CheckCircleOutline, contentDescription = null)
-                        }
-
-                        TagIcon(
-                            onClick = {
-                                viewModel.AlternativeTitles().delete(title)
+                        if(pendingItemId == title.id) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            TagIcon(
+                                onClick = { viewModel.AlternativeTitles().setPrimary(title) }
+                            ) {
+                                Icon(imageVector = Icons.Default.CheckCircleOutline, contentDescription = null)
                             }
-                        ) {
-                            Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+
+                            TagIcon(
+                                onClick = { viewModel.AlternativeTitles().delete(title) }
+                            ) {
+                                Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+                            }
                         }
                     },
                     label = {
@@ -361,10 +363,14 @@ fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier
             for (genre in details.genres) {
                 Tag(
                     actions = {
-                        TagIcon(
-                            onClick = { viewModel.Genres().delete(genre) }
-                        ) {
-                            Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+                        if(pendingItemId == genre.id) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            TagIcon(
+                                onClick = { viewModel.Genres().delete(genre) }
+                            ) {
+                                Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+                            }
                         }
                     },
                     label = { Text(genre.name) }
@@ -380,10 +386,14 @@ fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier
             for (tag in details.tags) {
                 Tag(
                     actions = {
-                        TagIcon(
-                            onClick = { viewModel.Tags().delete(tag) }
-                        ) {
-                            Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+                        if(pendingItemId == tag.id) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            TagIcon(
+                                onClick = { viewModel.Tags().delete(tag) }
+                            ) {
+                                Icon(imageVector = Icons.Filled.Close, contentDescription = null)
+                            }
                         }
                     },
                     label = { Text(tag.name) }
@@ -394,7 +404,7 @@ fun TagRows(viewModel: MediaDetailsViewModel<*>, details: MediaDetails, modifier
 }
 
 @Composable
-fun Sources(sourcesViewModel: MediaDetailsViewModel<*>.Sources, sources: List<Source>) {
+fun Sources(sourcesViewModel: MediaDetailsViewModel<*>.Sources, sources: List<Source>, pendingItemId: Int? = null) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -474,13 +484,14 @@ fun Sources(sourcesViewModel: MediaDetailsViewModel<*>.Sources, sources: List<So
             onDelete = { source ->
                 sourcesViewModel.delete(source)
             },
+            pendingItemId = pendingItemId
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
-fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources: List<Source>) {
+fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources: List<Source>, pendingItemId: Int? = null) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -578,6 +589,7 @@ fun Logs(logsViewModel: MediaDetailsViewModel<*>.Logs, logs: List<Log>, sources:
             onDelete = { log ->
                 logsViewModel.delete(log)
             },
+            pendingItemId = pendingItemId
         )
     }
 }

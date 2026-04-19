@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.window.core.layout.WindowSizeClass
 import components.*
+import components.LoadingSpinner
 import data_objects.ImageSource
 import data_objects.MediaDetails
 import infrastructure.ErrorHandler
@@ -66,11 +68,19 @@ fun<T: MediaDetails> MediaDetailsView(
         }
     ) {
         when (val state = uiState) {
-            is MediaDetailsUiState.Loading -> Text("Loading...")
+            is MediaDetailsUiState.Loading -> LoadingSpinner()
             is MediaDetailsUiState.Loaded<T> -> {
 
                 AnimatedContent(
-                    targetState = state.imageSelectionState
+                    targetState = state.imageSelectionState,
+                    contentKey = { imageState ->
+                        when(imageState) {
+                            null -> 0
+                            is ImageSelectionUiState.Loading -> 1
+                            is ImageSelectionUiState.BackdropSelection -> 2
+                            is ImageSelectionUiState.PosterSelection -> 3
+                        }
+                    }
                 ) { imageSelectionState ->
                     if(imageSelectionState != null) {
                         ImageSelection(imageSelectionState, viewModel)
@@ -78,7 +88,8 @@ fun<T: MediaDetails> MediaDetailsView(
                     else {
                         MediaDetails(
                             details = state.mediaDetails,
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            pendingItemId = state.pendingItemId
                         )
                     }
                 }
@@ -88,7 +99,7 @@ fun<T: MediaDetails> MediaDetailsView(
 }
 
 @Composable
-fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
+fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>, pendingItemId: Int? = null) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 
     val (posterWidth, padding) =
@@ -136,7 +147,8 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
 
                     TagRows(
                         viewModel = viewModel,
-                        details = details
+                        details = details,
+                        pendingItemId = pendingItemId
                     )
 
                     details.overview?.let { overview ->
@@ -145,7 +157,7 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                         )
                     }
 
-                    Sources(viewModel.Sources(), details.sources)
+                    Sources(viewModel.Sources(), details.sources, pendingItemId = pendingItemId)
                 }
             },
             bottomContent = {
@@ -156,7 +168,8 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
                     Logs(
                         logsViewModel = viewModel.Logs(),
                         logs = details.logs,
-                        sources = details.sources
+                        sources = details.sources,
+                        pendingItemId = pendingItemId
                     )
                 }
             }
@@ -169,7 +182,7 @@ fun MediaDetails(details: MediaDetails, viewModel: MediaDetailsViewModel<*>) {
 fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewModel<*>) {
 
     when(state) {
-        is ImageSelectionUiState.Loading -> {}
+        is ImageSelectionUiState.Loading -> { LoadingSpinner() }
         is ImageSelectionUiState.LoadedImageSelectionUiState -> {
 
             val viewModel = when(state) {
@@ -190,6 +203,7 @@ fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewMode
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(state.images) { image ->
+                        val isPending = state.pendingImagePath == image.path
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
@@ -198,10 +212,7 @@ fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewMode
                                     else Color.Transparent
                                 )
                                 .padding(5.dp)
-                                .clickable {
-                                    viewModel.setImage(image)
-                                }
-                                .pointerHoverIcon(PointerIcon.Hand)
+                                .let { if(!isPending) it.clickable { viewModel.setImage(image) }.pointerHoverIcon(PointerIcon.Hand) else it }
                         ) {
                             Box(
                                 modifier = Modifier
@@ -223,6 +234,17 @@ fun ImageSelection(state: ImageSelectionUiState, viewModel: MediaDetailsViewMode
                                                 .padding(10.dp)
                                                 .align(Alignment.TopEnd)
                                         )
+                                    }
+                                }
+
+                                if(isPending) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(Color.Black.copy(alpha = 0.4f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
                                     }
                                 }
                             }
